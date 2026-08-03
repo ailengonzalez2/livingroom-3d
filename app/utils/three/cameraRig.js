@@ -2,15 +2,15 @@ import CameraControls from 'camera-controls'
 
 let installed = false
 
-export function createCameraRig ({ THREE, camera, domElement, model }) {
+export function createCameraRig ({ THREE, camera, domElement, model, bounds = null }) {
   if (!installed) { CameraControls.install({ THREE }); installed = true }
 
   const controls = new CameraControls(camera, domElement)
   controls.smoothTime = 0.35
   controls.draggingSmoothTime = 0.12
 
-  // Límites derivados del tamaño real del modelo.
-  const box = new THREE.Box3().setFromObject(model)
+  // Límites derivados del interior del loft (o del modelo entero si no se pasan bounds).
+  const box = bounds ?? new THREE.Box3().setFromObject(model)
   const size = box.getSize(new THREE.Vector3())
   const center = box.getCenter(new THREE.Vector3())
   const radius = Math.max(size.x, size.z) / 2
@@ -22,8 +22,8 @@ export function createCameraRig ({ THREE, camera, domElement, model }) {
   controls.setBoundary(box)                        // el target no sale del loft
 
   const home = {
-    pos: [center.x + radius * 1.4, center.y + size.y * 0.9, center.z + radius * 1.4],
-    target: [center.x, center.y + size.y * 0.35, center.z]
+    pos: [center.x + radius * 1.35, center.y + size.y * 0.25, center.z + radius * 1.35],
+    target: [center.x - radius * 0.15, center.y - size.y * 0.3, center.z]
   }
   controls.setLookAt(...home.pos, ...home.target, false)
 

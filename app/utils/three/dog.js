@@ -82,6 +82,7 @@ export async function createDog ({ THREE, scene, floorY, waypoints }) {
       mixer.removeEventListener('finished', onFinished)
       object.traverse((o) => {
         o.geometry?.dispose?.()
+        o.skeleton?.dispose()
         const mats = Array.isArray(o.material) ? o.material : [o.material]
         for (const m of mats) {
           if (!m) continue

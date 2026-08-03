@@ -46,9 +46,11 @@ export function useAudio () {
       window.removeEventListener('pointerdown', onGesture)
     }
     window.addEventListener('pointerdown', onGesture)
-    watch(muted, (v) => {
-      localStorage.setItem('loft-muted', v ? '1' : '0')
-      if (ambientEl) v ? ambientEl.pause() : ambientEl.play().catch(() => {})
+    effectScope(true).run(() => {
+      watch(muted, (v) => {
+        localStorage.setItem('loft-muted', v ? '1' : '0')
+        if (ambientEl) v ? ambientEl.pause() : ambientEl.play().catch(() => {})
+      })
     })
   }
 

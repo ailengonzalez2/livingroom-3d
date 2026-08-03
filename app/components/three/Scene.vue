@@ -4,8 +4,11 @@ import { loadModel } from '~/utils/three/loadModel'
 import { createCameraRig } from '~/utils/three/cameraRig'
 import { createInteractions } from '~/utils/three/interactions'
 import { poiAnimations } from '~/utils/three/poiAnimations'
+import { createDog } from '~/utils/three/dog'
 import { pois } from '~/data/pois'
 import { onSceneAction, emitSceneAction } from '~/utils/sceneBus'
+
+const WAYPOINTS = [[2.5, 2.2], [6.0, 2.0], [6.2, -1.5], [2.5, -1.8]]
 
 const { activePoiId, webglError, loading } = useSceneState()
 const root = ref(null)
@@ -13,6 +16,7 @@ let ctx = null
 let model = null
 let rig = null
 let interactions = null
+let dog = null
 let disposed = false
 const unsubscribers = []
 
@@ -56,6 +60,15 @@ onMounted(async () => {
       onMissClick: () => { if (activePoiId.value) emitSceneAction('resetCamera') }
     })
 
+    const floorTopY = bounds ? bounds.min.y + 0.01 : 0.92
+    createDog({ THREE: ctx.THREE, scene: ctx.scene, floorY: floorTopY, waypoints: WAYPOINTS })
+      .then((d) => {
+        if (disposed) { d.dispose(); return }
+        dog = d
+        ctx.addTick(delta => dog.update(delta))
+      })
+      .catch(err => console.warn('No se pudo cargar el shiba', err))
+
     const meshesOf = poi => poi ? poi.meshNames.map(n => model.getObjectByName(n)).filter(Boolean) : []
 
     unsubscribers.push(onSceneAction('focusPoi', async (id) => {
@@ -91,6 +104,8 @@ onMounted(async () => {
       await rig.reset()
       rig.setEnabled(true)
     }))
+
+    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog } }
   } catch (err) {
     if (disposed) return
     console.error('Error cargando el modelo', err)
@@ -104,6 +119,7 @@ onUnmounted(() => {
   unsubscribers.splice(0).forEach(unsub => unsub())
   interactions?.dispose()
   rig?.dispose()
+  dog?.dispose()
   ctx?.dispose()
 })
 </script>

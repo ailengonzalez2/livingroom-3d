@@ -2,6 +2,7 @@
 import { emitSceneAction } from '~/utils/sceneBus'
 
 const { activePoiId, muted, loading } = useSceneState()
+const { toggleMute } = useAudio()
 </script>
 
 <template>
@@ -17,7 +18,7 @@ const { activePoiId, muted, loading } = useSceneState()
       :icon="muted ? 'i-lucide-volume-off' : 'i-lucide-volume-2'"
       variant="soft" color="neutral" square
       :aria-label="muted ? 'Activar sonido' : 'Silenciar'"
-      @click="muted = !muted"
+      @click="toggleMute()"
     />
     <UPopover>
       <UButton icon="i-lucide-circle-help" variant="soft" color="neutral" square aria-label="Ayuda" />

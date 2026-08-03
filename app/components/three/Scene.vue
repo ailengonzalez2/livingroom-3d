@@ -17,6 +17,8 @@ let disposed = false
 const unsubscribers = []
 
 onMounted(async () => {
+  useAudio().initOnFirstGesture()
+
   if (!webglAvailable()) {
     webglError.value = true
     loading.value = { active: false, progress: 0 }
@@ -62,6 +64,7 @@ onMounted(async () => {
       if (id === activePoiId.value) return
       const obj = interactions.getPoiObject(id)
       if (!obj) return
+      useAudio().playFocusSfx()
       // Los meshes del POI clickeado están hovered por definición: se limpia el
       // highlight antes de onFocus para que este no lo capture como estado
       // "original" a restaurar en el blur (ver nota en interactions.clearHover).

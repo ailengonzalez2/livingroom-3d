@@ -3,5 +3,6 @@
     <ClientOnly>
       <ThreeScene />
     </ClientOnly>
+    <LoadingScreen />
   </div>
 </template>

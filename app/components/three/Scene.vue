@@ -1,26 +1,30 @@
 <script setup>
 import { createThree, webglAvailable } from '~/utils/three/core'
+import { loadModel } from '~/utils/three/loadModel'
 
 const { webglError, loading } = useSceneState()
 const root = ref(null)
 let ctx = null
+let model = null
 
-onMounted(() => {
+onMounted(async () => {
   if (!webglAvailable()) {
     webglError.value = true
     loading.value = { active: false, progress: 0 }
     return
   }
   ctx = createThree(root.value)
-  // Cubo temporal para verificar el render; se reemplaza por el modelo en la próxima tarea.
-  const cube = new ctx.THREE.Mesh(
-    new ctx.THREE.BoxGeometry(1, 1, 1),
-    new ctx.THREE.MeshStandardMaterial({ color: '#22c55e' })
-  )
-  ctx.scene.add(cube)
-  ctx.addTick(d => { cube.rotation.y += d })
-  ctx.start()
-  loading.value = { active: false, progress: 100 }
+
+  try {
+    model = await loadModel((pct) => { loading.value = { active: true, progress: pct } })
+    ctx.scene.add(model)
+    ctx.start()
+    loading.value = { active: false, progress: 100 }
+  } catch (err) {
+    console.error('Error cargando el modelo', err)
+    webglError.value = true
+    loading.value = { active: false, progress: 0 }
+  }
 })
 
 onUnmounted(() => ctx?.dispose())

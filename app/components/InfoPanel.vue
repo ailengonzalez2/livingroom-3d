@@ -24,7 +24,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       <template #header>
         <div class="flex items-center justify-between">
           <h2 class="text-base font-semibold">{{ poi.title }}</h2>
-          <UButton icon="i-lucide-x" variant="ghost" color="neutral" size="sm" @click="close" />
+          <UButton icon="i-lucide-x" variant="ghost" color="neutral" size="sm" aria-label="Cerrar panel" @click="close" />
         </div>
       </template>
       <p class="text-sm text-neutral-500 dark:text-neutral-400">{{ poi.description }}</p>

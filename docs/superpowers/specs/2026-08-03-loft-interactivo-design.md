@@ -97,3 +97,9 @@ Sfx cortos al enfocar, sintetizados con Web Audio (sin assets que licenciar). Lo
 ## Fuera de alcance (fase 2)
 
 Personajes y diálogos, mobile pulido, deploy, SEO, i18n.
+
+## Notas as-built (2026-08-03)
+
+- `optimize-model` corre con `--join false`: el join de gltf-transform fusiona meshes y eso rompe el raycasting por nombre de mesh (los POIs dependen de `meshNames` estables). No quitar la flag.
+- GLTFLoader sanitiza los nombres de nodos al cargar (sin puntos: `Cube.001` → `Cube001`), y dos nombres traen bytes EF BF BD (U+FFFD) literales heredados del asset fuente — ver comentario en `app/data/pois.js`.
+- La forma final de POI es `{id, meshNames, title, description, animation?, cameraPadding?}`, con un registry `poiAnimations` (lamp/tv) para las animaciones por-POI y sfx global no-por-POI. Los límites de cámara se derivan del interior del loft (piso + cielorraso), no del modelo completo, para excluir los edificios exteriores del fondo.

@@ -1,4 +1,4 @@
-export function createInteractions ({ THREE, renderer, camera, model, pois, onPoiClick }) {
+export function createInteractions ({ THREE, renderer, camera, model, pois, onPoiClick, onMissClick }) {
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
   const dom = renderer.domElement
@@ -65,6 +65,7 @@ export function createInteractions ({ THREE, renderer, camera, model, pois, onPo
     if (moved > 6) return
     const mesh = pick(e)
     if (mesh) onPoiClick(meshToPoi.get(mesh))
+    else onMissClick?.()
   }
 
   dom.addEventListener('pointermove', onMove)

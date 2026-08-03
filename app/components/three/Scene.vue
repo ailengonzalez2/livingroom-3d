@@ -52,7 +52,8 @@ onMounted(async () => {
       camera: ctx.camera,
       model,
       pois,
-      onPoiClick: id => emitSceneAction('focusPoi', id)
+      onPoiClick: id => emitSceneAction('focusPoi', id),
+      onMissClick: () => { if (activePoiId.value) emitSceneAction('resetCamera') }
     })
 
     const meshesOf = poi => poi ? poi.meshNames.map(n => model.getObjectByName(n)).filter(Boolean) : []

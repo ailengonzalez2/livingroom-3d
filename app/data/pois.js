@@ -12,6 +12,8 @@ export const pois = [
   },
   {
     id: 'mesa',
+    // El nombre de nodo original en el GLB fuente trae bytes EF BF BD (U+FFFD)
+    // literales; el .repeat(10) reconstruye eso exactamente. No "arreglar" ni normalizar.
     meshNames: [`Cube002_${'�'.repeat(10)}_0`],
     title: 'Mesa ratona',
     description: 'Una mesa ratona baja, apoyada sobre una alfombra persa que aporta color y textura al piso del living. Funciona como punto de apoyo entre el sofá y los sillones.'

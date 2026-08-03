@@ -56,12 +56,23 @@ onMounted(async () => {
     const meshesOf = poi => poi ? poi.meshNames.map(n => model.getObjectByName(n)).filter(Boolean) : []
 
     unsubscribers.push(onSceneAction('focusPoi', async (id) => {
+      // Guard de re-entrada: el canvas sigue clickeable con un POI enfocado
+      // (setEnabled(false) solo apaga CameraControls), así que un segundo
+      // click sobre el mismo POI no debe re-disparar onFocus.
+      if (id === activePoiId.value) return
       const obj = interactions.getPoiObject(id)
       if (!obj) return
       // Los meshes del POI clickeado están hovered por definición: se limpia el
       // highlight antes de onFocus para que este no lo capture como estado
       // "original" a restaurar en el blur (ver nota en interactions.clearHover).
       interactions.clearHover()
+      // Si había otro POI activo (click directo a un POI sin pasar por
+      // resetCamera), hay que blurearlo antes de pisar activePoiId.value:
+      // si no, su animación queda huérfana (luz/emissive sin restaurar).
+      if (activePoiId.value) {
+        const prevPoi = pois.find(p => p.id === activePoiId.value)
+        poiAnimations[prevPoi?.animation]?.onBlur({ THREE: ctx.THREE, scene: ctx.scene, meshes: meshesOf(prevPoi) })
+      }
       activePoiId.value = id
       rig.setEnabled(false)
       const poi = pois.find(p => p.id === id)

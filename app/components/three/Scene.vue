@@ -8,7 +8,15 @@ import { createDog } from '~/utils/three/dog'
 import { pois } from '~/data/pois'
 import { onSceneAction, emitSceneAction } from '~/utils/sceneBus'
 
-const WAYPOINTS = [[2.5, 2.2], [6.0, 2.0], [6.2, -1.5], [2.5, -1.8]]
+const WAYPOINTS = [
+  [2.0, 0.2],    // a la derecha de la mesa ratona
+  [1.9, -1.85],  // entre el sillón derecho y el ventanal
+  [-1.2, -1.9],  // detrás del living, bordeando el ventanal
+  [-1.8, 0.5],   // corredor entre el sofá y la pared de ladrillo
+  [-1.3, 2.5],   // junto al busto, por el frente
+  [0.5, 2.7],    // por delante del sillón del fondo
+  [2.2, 2.3]     // vuelta al lado derecho
+]
 
 const { activePoiId, webglError, loading } = useSceneState()
 const root = ref(null)
@@ -111,6 +119,9 @@ onMounted(async () => {
       await rig.reset()
       rig.setEnabled(true)
     }))
+
+    // Handle de verificación en dev (import.meta.dev: no llega al build de prod).
+    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog } }
   } catch (err) {
     if (disposed) return
     console.error('Error cargando el modelo', err)

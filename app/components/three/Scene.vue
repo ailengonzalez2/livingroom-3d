@@ -2,13 +2,18 @@
 import { createThree, webglAvailable } from '~/utils/three/core'
 import { loadModel } from '~/utils/three/loadModel'
 import { createCameraRig } from '~/utils/three/cameraRig'
+import { createInteractions } from '~/utils/three/interactions'
+import { pois } from '~/data/pois'
+import { onSceneAction, emitSceneAction } from '~/utils/sceneBus'
 
-const { webglError, loading } = useSceneState()
+const { activePoiId, webglError, loading } = useSceneState()
 const root = ref(null)
 let ctx = null
 let model = null
 let rig = null
+let interactions = null
 let disposed = false
+const unsubscribers = []
 
 onMounted(async () => {
   if (!webglAvailable()) {
@@ -38,20 +43,35 @@ onMounted(async () => {
     ctx.start()
     loading.value = { active: false, progress: 100 }
 
-    // TEMPORAL (se elimina en Task 8): logger de clicks + handle de debug
-    // para mapear POIs desde el browser durante la Task 7.
+    interactions = createInteractions({
+      THREE: ctx.THREE,
+      renderer: ctx.renderer,
+      camera: ctx.camera,
+      model,
+      pois,
+      onPoiClick: id => emitSceneAction('focusPoi', id)
+    })
+
+    unsubscribers.push(onSceneAction('focusPoi', async (id) => {
+      const obj = interactions.getPoiObject(id)
+      if (!obj) return
+      activePoiId.value = id
+      rig.setEnabled(false)
+      const poi = pois.find(p => p.id === id)
+      await rig.focusObject(obj, poi?.cameraPadding)
+    }))
+
+    unsubscribers.push(onSceneAction('resetCamera', async () => {
+      activePoiId.value = null
+      await rig.reset()
+      rig.setEnabled(true)
+    }))
+
+    // dev-only: acceso manual desde el browser para verificación visual
+    // (el tab suele quedar hidden y no corre rAF; se fuerzan renders manuales).
+    // Se elimina en la Task 12.
     if (import.meta.dev) {
-      const raycaster = new ctx.THREE.Raycaster()
-      const pointer = new ctx.THREE.Vector2()
-      const debugPick = (e) => {
-        const r = ctx.renderer.domElement.getBoundingClientRect()
-        pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)
-        raycaster.setFromCamera(pointer, ctx.camera)
-        const hit = raycaster.intersectObjects(model.children, true)[0]
-        if (hit) console.log('[poi-debug]', hit.object.name, hit.object.position)
-      }
-      ctx.renderer.domElement.addEventListener('click', debugPick)
-      window.__loft = { ctx, model, rig }
+      window.__loft = { ctx, model, rig, interactions }
     }
   } catch (err) {
     if (disposed) return
@@ -61,7 +81,13 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(() => { disposed = true; rig?.dispose(); ctx?.dispose() })
+onUnmounted(() => {
+  disposed = true
+  unsubscribers.splice(0).forEach(unsub => unsub())
+  interactions?.dispose()
+  rig?.dispose()
+  ctx?.dispose()
+})
 </script>
 
 <template>

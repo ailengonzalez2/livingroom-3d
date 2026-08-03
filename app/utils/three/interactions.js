@@ -75,6 +75,15 @@ export function createInteractions ({ THREE, renderer, camera, model, pois, onPo
     // fitToBox acepta cualquier Object3D; para POIs de varios meshes se usa el
     // primero (suele ser el cuerpo principal). Ajustar con cameraPadding si hace falta.
     getPoiObject: id => poiMeshes.get(id)?.[0] ?? null,
+    // Fuerza el hover-out sin esperar al próximo pointermove. Necesario antes de
+    // disparar animaciones de foco (poiAnimations): el mesh recién clickeado sigue
+    // "hovered" y su emissive de highlight no debe confundirse con el estado
+    // original que la animación guarda para restaurar en el blur (ver Task 10).
+    clearHover () {
+      if (hovered) setHighlight(hovered, false)
+      hovered = null
+      dom.style.cursor = ''
+    },
     dispose () {
       if (hovered) setHighlight(hovered, false)
       dom.removeEventListener('pointermove', onMove)

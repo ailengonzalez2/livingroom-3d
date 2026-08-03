@@ -3,6 +3,7 @@ import { createThree, webglAvailable } from '~/utils/three/core'
 import { loadModel } from '~/utils/three/loadModel'
 import { createCameraRig } from '~/utils/three/cameraRig'
 import { createInteractions } from '~/utils/three/interactions'
+import { poiAnimations } from '~/utils/three/poiAnimations'
 import { pois } from '~/data/pois'
 import { onSceneAction, emitSceneAction } from '~/utils/sceneBus'
 
@@ -52,16 +53,25 @@ onMounted(async () => {
       onPoiClick: id => emitSceneAction('focusPoi', id)
     })
 
+    const meshesOf = poi => poi ? poi.meshNames.map(n => model.getObjectByName(n)).filter(Boolean) : []
+
     unsubscribers.push(onSceneAction('focusPoi', async (id) => {
       const obj = interactions.getPoiObject(id)
       if (!obj) return
+      // Los meshes del POI clickeado están hovered por definición: se limpia el
+      // highlight antes de onFocus para que este no lo capture como estado
+      // "original" a restaurar en el blur (ver nota en interactions.clearHover).
+      interactions.clearHover()
       activePoiId.value = id
       rig.setEnabled(false)
       const poi = pois.find(p => p.id === id)
+      poiAnimations[poi?.animation]?.onFocus({ THREE: ctx.THREE, scene: ctx.scene, meshes: meshesOf(poi) })
       await rig.focusObject(obj, poi?.cameraPadding)
     }))
 
     unsubscribers.push(onSceneAction('resetCamera', async () => {
+      const prev = pois.find(p => p.id === activePoiId.value)
+      poiAnimations[prev?.animation]?.onBlur({ THREE: ctx.THREE, scene: ctx.scene, meshes: meshesOf(prev) })
       activePoiId.value = null
       await rig.reset()
       rig.setEnabled(true)

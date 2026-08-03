@@ -6,6 +6,7 @@ const { webglError, loading } = useSceneState()
 const root = ref(null)
 let ctx = null
 let model = null
+let disposed = false
 
 onMounted(async () => {
   if (!webglAvailable()) {
@@ -17,17 +18,19 @@ onMounted(async () => {
 
   try {
     model = await loadModel((pct) => { loading.value = { active: true, progress: pct } })
+    if (disposed) return
     ctx.scene.add(model)
     ctx.start()
     loading.value = { active: false, progress: 100 }
   } catch (err) {
+    if (disposed) return
     console.error('Error cargando el modelo', err)
     webglError.value = true
     loading.value = { active: false, progress: 0 }
   }
 })
 
-onUnmounted(() => ctx?.dispose())
+onUnmounted(() => { disposed = true; ctx?.dispose() })
 </script>
 
 <template>

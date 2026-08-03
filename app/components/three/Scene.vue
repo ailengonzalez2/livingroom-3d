@@ -90,13 +90,6 @@ onMounted(async () => {
       await rig.reset()
       rig.setEnabled(true)
     }))
-
-    // dev-only: acceso manual desde el browser para verificación visual
-    // (el tab suele quedar hidden y no corre rAF; se fuerzan renders manuales).
-    // Se elimina en la Task 12.
-    if (import.meta.dev) {
-      window.__loft = { ctx, model, rig, interactions }
-    }
   } catch (err) {
     if (disposed) return
     console.error('Error cargando el modelo', err)

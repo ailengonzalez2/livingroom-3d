@@ -42,12 +42,13 @@ export async function createDog ({ THREE, scene, floorY, waypoints }) {
     current = name
   }
 
-  mixer.addEventListener('finished', (e) => {
+  const onFinished = (e) => {
     if (e.action !== actions.jump) return
     jumping = false
     actions[current].reset().fadeIn(0.25).play()
     actions.jump.fadeOut(0.25)
-  })
+  }
+  mixer.addEventListener('finished', onFinished)
 
   return {
     object,
@@ -78,6 +79,16 @@ export async function createDog ({ THREE, scene, floorY, waypoints }) {
     },
     dispose () {
       mixer.stopAllAction()
+      mixer.removeEventListener('finished', onFinished)
+      object.traverse((o) => {
+        o.geometry?.dispose?.()
+        const mats = Array.isArray(o.material) ? o.material : [o.material]
+        for (const m of mats) {
+          if (!m) continue
+          for (const v of Object.values(m)) v?.isTexture && v.dispose()
+          m.dispose?.()
+        }
+      })
       object.removeFromParent()
     }
   }

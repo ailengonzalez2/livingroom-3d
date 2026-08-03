@@ -4,5 +4,7 @@
       <ThreeScene />
     </ClientOnly>
     <LoadingScreen />
+    <InfoPanel />
+    <HudControls />
   </div>
 </template>

@@ -72,6 +72,7 @@ onMounted(async () => {
         if (disposed) { d.dispose(); return }
         dog = d
         ctx.addTick(delta => dog.update(delta))
+        interactions.addExtraTarget(dog.object, () => dog.jump())
       })
       .catch(err => console.warn('No se pudo cargar el shiba', err))
 

@@ -23,11 +23,34 @@ export function createInteractions ({ THREE, renderer, camera, model, pois, onPo
   const interactive = [...meshToPoi.keys()]
   let hovered = null
 
+  // Targets adicionales (no-POI) que reaccionan al click, ej. el shiba.
+  const extras = []
+  function addExtraTarget (object, onClick) {
+    extras.push({ object, onClick })
+  }
+
   function pick (e) {
     const r = dom.getBoundingClientRect()
     pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)
     raycaster.setFromCamera(pointer, camera)
-    return raycaster.intersectObjects(interactive, false)[0]?.object ?? null
+
+    let bestMesh = null
+    let bestExtra = null
+    let bestDistance = Infinity
+
+    const meshHit = raycaster.intersectObjects(interactive, false)[0]
+    if (meshHit) { bestMesh = meshHit.object; bestDistance = meshHit.distance }
+
+    for (const entry of extras) {
+      const hit = raycaster.intersectObject(entry.object, true)[0]
+      if (hit && hit.distance < bestDistance) {
+        bestDistance = hit.distance
+        bestExtra = entry
+        bestMesh = null
+      }
+    }
+
+    return { mesh: bestMesh, extra: bestExtra }
   }
 
   function setHighlight (mesh, on) {
@@ -47,12 +70,13 @@ export function createInteractions ({ THREE, renderer, camera, model, pois, onPo
   }
 
   const onMove = (e) => {
-    const mesh = pick(e)
-    if (mesh === hovered) return
-    if (hovered) setHighlight(hovered, false)
-    hovered = mesh
-    if (hovered) setHighlight(hovered, true)
-    dom.style.cursor = hovered ? 'pointer' : ''
+    const { mesh, extra } = pick(e)
+    if (mesh !== hovered) {
+      if (hovered) setHighlight(hovered, false)
+      hovered = mesh
+      if (hovered) setHighlight(hovered, true)
+    }
+    dom.style.cursor = (mesh || extra) ? 'pointer' : ''
   }
 
   // Distinguir click de drag de órbita
@@ -63,8 +87,9 @@ export function createInteractions ({ THREE, renderer, camera, model, pois, onPo
     const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1])
     downAt = null
     if (moved > 6) return
-    const mesh = pick(e)
-    if (mesh) onPoiClick(meshToPoi.get(mesh))
+    const { mesh, extra } = pick(e)
+    if (extra) extra.onClick()
+    else if (mesh) onPoiClick(meshToPoi.get(mesh))
     else onMissClick?.()
   }
 
@@ -85,12 +110,14 @@ export function createInteractions ({ THREE, renderer, camera, model, pois, onPo
       hovered = null
       dom.style.cursor = ''
     },
+    addExtraTarget,
     dispose () {
       if (hovered) setHighlight(hovered, false)
       dom.removeEventListener('pointermove', onMove)
       dom.removeEventListener('pointerdown', onDown)
       dom.removeEventListener('pointerup', onUp)
       dom.style.cursor = ''
+      extras.length = 0
     }
   }
 }

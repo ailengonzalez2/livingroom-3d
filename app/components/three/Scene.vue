@@ -111,8 +111,6 @@ onMounted(async () => {
       await rig.reset()
       rig.setEnabled(true)
     }))
-
-    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog } }
   } catch (err) {
     if (disposed) return
     console.error('Error cargando el modelo', err)

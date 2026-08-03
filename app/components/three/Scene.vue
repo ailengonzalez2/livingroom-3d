@@ -18,6 +18,7 @@ let rig = null
 let interactions = null
 let dog = null
 let disposed = false
+let onWheel = null
 const unsubscribers = []
 
 onMounted(async () => {
@@ -59,6 +60,11 @@ onMounted(async () => {
       onPoiClick: id => emitSceneAction('focusPoi', id),
       onMissClick: () => { if (activePoiId.value) emitSceneAction('resetCamera') }
     })
+
+    let lastScroll = 0
+    onWheel = () => { lastScroll = performance.now() }
+    ctx.renderer.domElement.addEventListener('wheel', onWheel, { passive: true })
+    ctx.addTick(() => { dog?.setWalking(performance.now() - lastScroll < 600) })
 
     const floorTopY = bounds ? bounds.min.y + 0.01 : 0.92
     createDog({ THREE: ctx.THREE, scene: ctx.scene, floorY: floorTopY, waypoints: WAYPOINTS })
@@ -117,6 +123,7 @@ onMounted(async () => {
 onUnmounted(() => {
   disposed = true
   unsubscribers.splice(0).forEach(unsub => unsub())
+  if (onWheel) ctx?.renderer?.domElement?.removeEventListener('wheel', onWheel)
   interactions?.dispose()
   rig?.dispose()
   dog?.dispose()

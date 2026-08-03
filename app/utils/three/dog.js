@@ -70,8 +70,7 @@ export async function createDog ({ THREE, scene, floorY, waypoints }) {
       const dist = dir.length()
       if (dist < 0.15) { wpIndex = (wpIndex + 1) % waypoints.length; return }
       dir.normalize()
-      // el modelo mira a -Z en reposo
-      const targetAngle = Math.atan2(dir.x, dir.z) + Math.PI
+      const targetAngle = Math.atan2(dir.x, dir.z)
       let d = targetAngle - object.rotation.y
       while (d > Math.PI) d -= Math.PI * 2
       while (d < -Math.PI) d += Math.PI * 2

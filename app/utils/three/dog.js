@@ -4,8 +4,9 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 const TARGET_HEIGHT = 0.5
 const WALK_SPEED = 0.9
 const TURN_SPEED = 6
+const ARC = 0.35
 
-export async function createDog ({ THREE, scene, floorY, waypoints }) {
+export async function createDog ({ THREE, scene, floorY, waypoints, chairs = [] }) {
   const draco = new DRACOLoader()
   draco.setDecoderPath('/draco/')
   const loader = new GLTFLoader()
@@ -31,9 +32,17 @@ export async function createDog ({ THREE, scene, floorY, waypoints }) {
   actions.idle.play()
 
   let current = 'idle'
-  let jumping = false
+  let airborne = false
+  let onChair = false
+  let currentChair = null
   let wpIndex = 1
   const dir = new THREE.Vector3()
+
+  const leapStart = new THREE.Vector3()
+  const leapTarget = new THREE.Vector3()
+  let leapT = 0
+  let leapDuration = 1
+  let leapOnLand = null
 
   function crossfade (name, dur = 0.3) {
     if (current === name) return
@@ -42,9 +51,22 @@ export async function createDog ({ THREE, scene, floorY, waypoints }) {
     current = name
   }
 
+  function leapTo (target, onLand) {
+    airborne = true
+    leapStart.copy(object.position)
+    leapTarget.copy(target)
+    leapT = 0
+    leapDuration = actions.jump.getClip().duration
+    leapOnLand = onLand
+    const dx = target.x - object.position.x
+    const dz = target.z - object.position.z
+    object.rotation.y = Math.atan2(dx, dz)
+    actions[current].fadeOut(0.15)
+    actions.jump.reset().fadeIn(0.15).play()
+  }
+
   const onFinished = (e) => {
     if (e.action !== actions.jump) return
-    jumping = false
     actions[current].reset().fadeIn(0.25).play()
     actions.jump.fadeOut(0.25)
   }
@@ -53,18 +75,42 @@ export async function createDog ({ THREE, scene, floorY, waypoints }) {
   return {
     object,
     setWalking (v) {
-      if (jumping) return
+      if (airborne || onChair) return
       crossfade(v ? 'walk' : 'idle')
     },
     jump () {
-      if (jumping) return
-      jumping = true
-      actions[current].fadeOut(0.15)
-      actions.jump.reset().fadeIn(0.15).play()
+      if (airborne) return
+      if (!onChair) {
+        if (!chairs.length) return
+        let nearest = null
+        let nearestDist = Infinity
+        for (const chair of chairs) {
+          const d = object.position.distanceToSquared(chair.position)
+          if (d < nearestDist) { nearestDist = d; nearest = chair }
+        }
+        if (!nearest) return
+        currentChair = nearest
+        leapTo(nearest.position, () => { onChair = true })
+      } else {
+        leapTo(currentChair.dismount, () => { onChair = false })
+      }
     },
     update (delta) {
       mixer.update(delta)
-      if (current !== 'walk' || jumping) return
+      if (airborne) {
+        leapT += delta / leapDuration
+        const t = Math.min(leapT, 1)
+        object.position.lerpVectors(leapStart, leapTarget, t)
+        object.position.y += ARC * Math.sin(Math.PI * t)
+        if (t >= 1) {
+          object.position.copy(leapTarget)
+          airborne = false
+          const onLand = leapOnLand
+          leapOnLand = null
+          onLand?.()
+        }
+      }
+      if (current !== 'walk' || airborne || onChair) return
       const [tx, tz] = waypoints[wpIndex]
       dir.set(tx - object.position.x, 0, tz - object.position.z)
       const dist = dir.length()

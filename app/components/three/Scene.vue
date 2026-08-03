@@ -9,14 +9,15 @@ import { pois } from '~/data/pois'
 import { onSceneAction, emitSceneAction } from '~/utils/sceneBus'
 
 const WAYPOINTS = [
-  [2.0, 0.2],    // a la derecha de la mesa ratona
-  [1.9, -1.85],  // entre el sillón derecho y el ventanal
-  [-1.2, -1.9],  // detrás del living, bordeando el ventanal
-  [-1.8, 0.5],   // corredor entre el sofá y la pared de ladrillo
-  [-1.3, 2.5],   // junto al busto, por el frente
-  [0.5, 2.7],    // por delante del sillón del fondo
-  [2.2, 2.3]     // vuelta al lado derecho
+  [2.3, 0.4],    // derecha de la mesa
+  [1.4, 1.15],   // cruce por delante del sillón del fondo
+  [0.15, 1.1],   // frente del sillón del fondo, detrás de la mesa
+  [-0.31, 1.02], // esquina noroeste de la mesa
+  [-0.31, -0.45],// pasillo entre el sofá y la mesa, hacia el sur
+  [1.5, -0.45]   // por delante de los sillones de la ventana
 ]
+
+const CHAIR_MESHES = ['node_0005_Material007_0', 'node_0006_Material007_0', 'node_0007_Material007_0']
 
 const { activePoiId, webglError, loading } = useSceneState()
 const root = ref(null)
@@ -75,7 +76,21 @@ onMounted(async () => {
     ctx.addTick(() => { dog?.setWalking(performance.now() - lastScroll < 600) })
 
     const floorTopY = bounds ? bounds.min.y + 0.01 : 0.92
-    createDog({ THREE: ctx.THREE, scene: ctx.scene, floorY: floorTopY, waypoints: WAYPOINTS })
+
+    const chairs = CHAIR_MESHES.map((name) => {
+      const mesh = model.getObjectByName(name)
+      if (!mesh) return null
+      const box = new ctx.THREE.Box3().setFromObject(mesh)
+      const c = box.getCenter(new ctx.THREE.Vector3())
+      const seatY = box.min.y + (box.max.y - box.min.y) * 0.45
+      const center = new ctx.THREE.Vector3(c.x, seatY, c.z)
+      // punto de bajada: alejado del centro del living (mesa en ~[0.27, 0.39]) para caer en piso libre
+      const away = new ctx.THREE.Vector3(c.x - 0.27, 0, c.z - 0.39).normalize().multiplyScalar(0.8)
+      const dismount = new ctx.THREE.Vector3(c.x + away.x, floorTopY, c.z + away.z)
+      return { position: center, dismount }
+    }).filter(Boolean)
+
+    createDog({ THREE: ctx.THREE, scene: ctx.scene, floorY: floorTopY, waypoints: WAYPOINTS, chairs })
       .then((d) => {
         if (disposed) { d.dispose(); return }
         dog = d

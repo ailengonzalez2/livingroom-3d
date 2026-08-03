@@ -25,8 +25,8 @@ onMounted(async () => {
 
     // Bounds del interior del loft (piso + cielorraso), para no incluir los
     // edificios exteriores del fondo al calcular límites/encuadre de cámara.
-    const floor = model.getObjectByName('Plane_Material.002_0')
-    const ceiling = model.getObjectByName('Plane.004_Material.003_0')
+    const floor = model.getObjectByName('Plane_Material002_0')
+    const ceiling = model.getObjectByName('Plane004_Material003_0')
     let bounds = null
     if (floor) {
       bounds = new ctx.THREE.Box3().setFromObject(floor)

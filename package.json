@@ -7,7 +7,7 @@
     "build": "nuxt build",
     "preview": "nuxt preview",
     "test": "vitest run",
-    "optimize-model": "gltf-transform optimize model-source/scene.gltf public/models/loft.glb --compress draco --texture-compress webp"
+    "optimize-model": "gltf-transform optimize model-source/scene.gltf public/models/loft.glb --compress draco --texture-compress webp --join false"
   },
   "dependencies": {
     "@nuxt/ui": "^4.10.0",

@@ -10,14 +10,8 @@ export const pois = [
     title: 'Living en cuero',
     description: 'El sofá y los tres sillones de cuero organizan el living alrededor de la mesa ratona. Su volumen marca el centro social del loft, con la pared de ladrillo como telón de fondo.'
   },
-  {
-    id: 'mesa',
-    // El nombre de nodo original en el GLB fuente trae bytes EF BF BD (U+FFFD)
-    // literales; el .repeat(10) reconstruye eso exactamente. No "arreglar" ni normalizar.
-    meshNames: [`Cube002_${'�'.repeat(10)}_0`],
-    title: 'Mesa ratona',
-    description: 'Una mesa ratona baja, apoyada sobre una alfombra persa que aporta color y textura al piso del living. Funciona como punto de apoyo entre el sofá y los sillones.'
-  },
+  // La mesa ratona no es un POI: sostiene los objetos interactivos (laptop,
+  // airpods, foto y cámara) y clickearla competía con ellos.
   {
     id: 'lampara',
     meshNames: [

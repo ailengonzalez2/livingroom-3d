@@ -55,11 +55,12 @@ export async function createLaptop ({ THREE, scene, camera, position, rotationY 
   // eje perpendicular a la línea de visión de la vista home: los deja en fila
   const ROW_AXIS = new THREE.Vector3(0.6, 0, -0.8).normalize()
 
-  // [objeto, offset lateral, retardo de aparición]
+  // [objeto, offset lateral, retardo de aparición, corrección de yaw]
   const iconConfigs = [
-    { obj: telegram, side: -1, delay: 0.00 },
-    { obj: linkedin, side: 0, delay: 0.06 },
-    { obj: xIcon, side: 1, delay: 0.12 }
+    // el disco del GLB de telegram tiene su cara en el eje X local, no en Z
+    { obj: telegram, side: -1, delay: 0.00, yawOffset: -Math.PI / 2 },
+    { obj: linkedin, side: 0, delay: 0.06, yawOffset: 0 },
+    { obj: xIcon, side: 1, delay: 0.12, yawOffset: 0 }
   ]
 
   const icons = []
@@ -88,7 +89,7 @@ export async function createLaptop ({ THREE, scene, camera, position, rotationY 
       .add(new THREE.Vector3(0, ICON_RISE, 0))
     obj.position.copy(start)
 
-    icons.push({ obj, scale: iconScale, start, end, delay: cfg.delay })
+    icons.push({ obj, scale: iconScale, start, end, delay: cfg.delay, yawOffset: cfg.yawOffset })
   }
 
   const screens = []
@@ -139,7 +140,7 @@ export async function createLaptop ({ THREE, scene, camera, position, rotationY 
         it.obj.position.lerpVectors(it.start, it.end, qe)
         if (qe > 0) {
           // billboard horizontal: siempre de frente a la cámara, para que el logo sea legible
-          it.obj.rotation.y = Math.atan2(camera.position.x - it.obj.position.x, camera.position.z - it.obj.position.z)
+          it.obj.rotation.y = Math.atan2(camera.position.x - it.obj.position.x, camera.position.z - it.obj.position.z) + it.yawOffset
           it.obj.position.y += Math.sin(clock * 1.6 + i) * ICON_BOB * qe // cabeceo suave al flotar, desfasado
         }
       })

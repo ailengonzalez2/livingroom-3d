@@ -40,6 +40,8 @@ export function createSocialIcon ({ THREE, kind }) {
 
   const tex = new THREE.CanvasTexture(canvas)
   tex.colorSpace = THREE.SRGBColorSpace
+  tex.center.set(0.5, 0.5)
+  tex.rotation = Math.PI / 2
 
   const geometry = new THREE.CylinderGeometry(0.5, 0.5, 0.16, 64)
   // orden de grupos de CylinderGeometry: [lateral, tapa superior, tapa inferior]

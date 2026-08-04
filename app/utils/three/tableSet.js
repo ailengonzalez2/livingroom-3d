@@ -6,10 +6,7 @@ const PHOTO_WIDTH = 0.10
 const CAM_HEIGHT = 0.11
 const SPEED = 1.6
 const LIFT_CAM = 0.14
-const CAM_SPIN = 0.5
-const CAM_REST_Y = 0.3
 const LIFT_PHOTO = 0.10
-const SHOW_TILT_ANGLE = 1.05
 const SEPARATE = 0.055
 // El frente de la cámara apunta a +Z local (verificado midiendo qué meshes
 // sobresalen). En reposo queda apenas girada; al mostrarse gira hacia el
@@ -54,6 +51,10 @@ export async function createTableSet ({ THREE, scene, position }) {
     loadGltf('/models/instax.glb')
   ])
 
+  // Dirección "al frente de la escena": hacia la cámara de la vista home,
+  // con una leve inclinación hacia arriba (calibrado en el browser).
+  const FRONT = new THREE.Vector3(0.816, 0.12, 0.578).normalize()
+
   // --- Foto: acostarla plana (normal -> +Y), escalar y apoyar en `position` ---
   const normal = new THREE.Vector3(...PHOTO_NORMAL_LOCAL).normalize()
   const restQuaternion = new THREE.Quaternion().setFromUnitVectors(normal, new THREE.Vector3(0, 1, 0))
@@ -79,10 +80,11 @@ export async function createTableSet ({ THREE, scene, position }) {
   const photoBaseZ = photo.position.z
   const photoTopY = photoBox.max.y
 
-  // --- Cámara: apenas girada en reposo (frente a +Z local), escalar a
+  // --- Cámara: apuntando siempre al frente de la escena (FRONT), escalar a
   // CAM_HEIGHT de alto, apoyar sobre el tope real de la foto, centrada en xz
   // sobre `position` ---
-  camera.rotation.y = CAM_REST_Y
+  const camRestY = Math.atan2(FRONT.x, FRONT.z)
+  camera.rotation.y = camRestY
   camera.updateMatrixWorld(true)
 
   const camBox0 = realBounds(THREE, camera)
@@ -101,7 +103,6 @@ export async function createTableSet ({ THREE, scene, position }) {
   const camBaseX = camera.position.x
   const camBaseY = camera.position.y
   const camBaseZ = camera.position.z
-  const restCamRotY = CAM_REST_Y
 
   const group = new THREE.Group()
   group.name = '__table-set'
@@ -112,13 +113,18 @@ export async function createTableSet ({ THREE, scene, position }) {
   let target = 0
   let p = 0
 
-  // Quaternion "mostrada": se levanta hacia el observador de la vista home,
-  // compuesto en espacio MUNDO (premultiplicado) sobre el quaternion de
-  // reposo — no por Euler, que pelea con la orientación compuesta de reposo.
+  // Quaternion "mostrada": orientación absoluta que deja la foto de cara al
+  // frente de la escena (FRONT), con el lado largo vertical.
   const qRest = photo.quaternion.clone()
   const showAxisNorm = new THREE.Vector3(...SHOW_AXIS).normalize()
-  const qDelta = new THREE.Quaternion().setFromAxisAngle(showAxisNorm, SHOW_TILT_ANGLE)
-  const qShown = qDelta.clone().multiply(qRest)
+  // Normal del plano de la foto en su espacio local (medida por espesor mínimo).
+  const PHOTO_NORMAL = new THREE.Vector3(-0.54, 0.82, 0.188).normalize()
+  // Alinea la normal con el frente y luego corrige el "roll" para que la foto
+  // quede derecha (valor hallado calibrando en el browser).
+  const PHOTO_ROLL = 4.451
+  const qShown = new THREE.Quaternion()
+    .setFromAxisAngle(FRONT, PHOTO_ROLL)
+    .multiply(new THREE.Quaternion().setFromUnitVectors(PHOTO_NORMAL, FRONT))
 
   return {
     object: group,
@@ -135,7 +141,6 @@ export async function createTableSet ({ THREE, scene, position }) {
       camera.position.x = camBaseX + showAxisNorm.x * SEPARATE * e
       camera.position.y = camBaseY + LIFT_CAM * e
       camera.position.z = camBaseZ + showAxisNorm.z * SEPARATE * e
-      camera.rotation.y = restCamRotY + CAM_SPIN * e
 
       photo.position.x = photoBaseX - showAxisNorm.x * SEPARATE * e
       photo.position.y = photoBaseY + LIFT_PHOTO * e

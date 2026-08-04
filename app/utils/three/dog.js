@@ -5,6 +5,7 @@ const TARGET_HEIGHT = 0.5
 const WALK_SPEED = 0.9
 const TURN_SPEED = 6
 const ARC = 0.35
+const REST_DELAY = 4
 
 export async function createDog ({ THREE, scene, floorY, waypoints, chairs = [] }) {
   const draco = new DRACOLoader()
@@ -26,14 +27,19 @@ export async function createDog ({ THREE, scene, floorY, waypoints, chairs = [] 
   const actions = {
     idle: mixer.clipAction(clip('Idle')),
     walk: mixer.clipAction(clip('Walk')),
-    jump: mixer.clipAction(clip('Gallop_Jump'))
+    jump: mixer.clipAction(clip('Gallop_Jump')),
+    rest: mixer.clipAction(clip('Death'))
   }
   actions.jump.setLoop(THREE.LoopOnce)
+  actions.rest.setLoop(THREE.LoopOnce)
+  actions.rest.clampWhenFinished = true
   actions.idle.play()
 
   let current = 'idle'
   let airborne = false
   let onChair = false
+  let resting = false
+  let idleTime = 0
   let currentChair = null
   let wpIndex = 1
   const dir = new THREE.Vector3()
@@ -49,10 +55,12 @@ export async function createDog ({ THREE, scene, floorY, waypoints, chairs = [] 
     actions[name].reset().fadeIn(dur).play()
     actions[current].fadeOut(dur)
     current = name
+    idleTime = 0
   }
 
   function leapTo (target, onLand) {
     airborne = true
+    idleTime = 0
     leapStart.copy(object.position)
     leapTarget.copy(target)
     leapT = 0
@@ -65,10 +73,32 @@ export async function createDog ({ THREE, scene, floorY, waypoints, chairs = [] 
     actions.jump.reset().fadeIn(0.15).play()
   }
 
+  function startRest () {
+    resting = true
+    actions.rest.reset()
+    actions.rest.timeScale = 0.7
+    actions.rest.fadeIn(0.25).play()
+    actions[current].fadeOut(0.25)
+  }
+
+  function wakeUp () {
+    if (!resting) return
+    actions.rest.paused = false
+    actions.rest.timeScale = -1.3
+  }
+
   const onFinished = (e) => {
-    if (e.action !== actions.jump) return
-    actions[current].reset().fadeIn(0.25).play()
-    actions.jump.fadeOut(0.25)
+    if (e.action === actions.jump) {
+      actions[current].reset().fadeIn(0.25).play()
+      actions.jump.fadeOut(0.25)
+      return
+    }
+    if (e.action === actions.rest) {
+      resting = false
+      actions.rest.stop()
+      actions[current].reset().fadeIn(0.2).play()
+      idleTime = 0
+    }
   }
   mixer.addEventListener('finished', onFinished)
 
@@ -76,10 +106,15 @@ export async function createDog ({ THREE, scene, floorY, waypoints, chairs = [] 
     object,
     setWalking (v) {
       if (airborne || onChair) return
+      if (resting) {
+        if (v) wakeUp()
+        return
+      }
       crossfade(v ? 'walk' : 'idle')
     },
     jump () {
       if (airborne) return
+      if (resting) { wakeUp(); return }
       if (!onChair) {
         if (!chairs.length) return
         let nearest = null
@@ -97,6 +132,10 @@ export async function createDog ({ THREE, scene, floorY, waypoints, chairs = [] 
     },
     update (delta) {
       mixer.update(delta)
+      if (current === 'idle' && !airborne && !onChair && !resting) {
+        idleTime += delta
+        if (idleTime > REST_DELAY) startRest()
+      }
       if (airborne) {
         leapT += delta / leapDuration
         const t = Math.min(leapT, 1)

@@ -1,12 +1,21 @@
 let audioCtx = null
 let ambientEl = null
 let initialized = false
+const muteListeners = new Set()
 
 export function useAudio () {
   const { muted } = useSceneState()
 
-  function ensureCtx () {
+  function createCtx () {
+    // Crear el contexto antes del primer gesto es válido: nace `suspended` y lo
+    // resume `ensureCtx()`. Eso permite que Three lo tome para su AudioListener
+    // durante el setup de la escena en vez de abrir un segundo contexto.
     audioCtx ??= new (window.AudioContext || window.webkitAudioContext)()
+    return audioCtx
+  }
+
+  function ensureCtx () {
+    createCtx()
     if (audioCtx.state === 'suspended') audioCtx.resume()
   }
 
@@ -50,9 +59,24 @@ export function useAudio () {
       watch(muted, (v) => {
         localStorage.setItem('loft-muted', v ? '1' : '0')
         if (ambientEl) v ? ambientEl.pause() : ambientEl.play().catch(() => {})
+        for (const fn of muteListeners) fn(v)
       })
     })
   }
 
-  return { playFocusSfx, toggleMute: () => { muted.value = !muted.value }, initOnFirstGesture }
+  // Suscripción al mute para quien maneje su propio audio (la música de los
+  // airpods). Se llama una vez con el valor actual y devuelve el unsubscribe.
+  function onMuteChange (fn) {
+    muteListeners.add(fn)
+    fn(muted.value)
+    return () => muteListeners.delete(fn)
+  }
+
+  return {
+    playFocusSfx,
+    toggleMute: () => { muted.value = !muted.value },
+    initOnFirstGesture,
+    getContext: createCtx,
+    onMuteChange
+  }
 }

@@ -6,6 +6,7 @@ import { createInteractions } from '~/utils/three/interactions'
 import { poiAnimations } from '~/utils/three/poiAnimations'
 import { createDog } from '~/utils/three/dog'
 import { createAirpods } from '~/utils/three/airpods'
+import { createAirpodsMusic } from '~/utils/three/airpodsMusic'
 import { placeDecor } from '~/utils/three/decor'
 import { createTableSet } from '~/utils/three/tableSet'
 import { createLaptop } from '~/utils/three/laptop'
@@ -34,6 +35,8 @@ let airpods = null
 let cup = null
 let tableSet = null
 let laptop = null
+let airpodsMusic = null
+let listener = null
 let disposed = false
 let onWheel = null
 const unsubscribers = []
@@ -47,6 +50,12 @@ onMounted(async () => {
     return
   }
   ctx = createThree(root.value)
+
+  // Compartir el AudioContext del composable con Three, en vez de que su
+  // AudioListener abra un segundo contexto en paralelo al del SFX de focus.
+  ctx.THREE.AudioContext.setContext(useAudio().getContext())
+  listener = new ctx.THREE.AudioListener()
+  ctx.camera.add(listener)
 
   try {
     model = await loadModel((pct) => { loading.value = { active: true, progress: pct } })
@@ -125,13 +134,23 @@ onMounted(async () => {
       })
       .catch(err => console.warn('No se pudo cargar el shiba', err))
 
-    createAirpods({ THREE: ctx.THREE, scene: ctx.scene, position: new ctx.THREE.Vector3(0.27, 1.24, 0.39) })
+    createAirpods({
+      THREE: ctx.THREE,
+      scene: ctx.scene,
+      position: new ctx.THREE.Vector3(0.27, 1.24, 0.39),
+      // `airpodsMusic` ya está asignado cuando esto puede dispararse: el toggle
+      // requiere un click, y el click requiere que el .then() de abajo haya corrido.
+      onIntent: opening => opening ? airpodsMusic?.open() : airpodsMusic?.close()
+    })
       .then((a) => {
         if (disposed) { a.dispose(); return }
         airpods = a
         ctx.enableShadows(airpods.object)
         ctx.addTick(delta => airpods.update(delta))
         interactions.addExtraTarget(airpods.object, () => airpods.toggle())
+
+        airpodsMusic = createAirpodsMusic({ THREE: ctx.THREE, listener, object: airpods.object })
+        unsubscribers.push(useAudio().onMuteChange(v => airpodsMusic?.setMuted(v)))
       })
       .catch(err => console.warn('No se pudieron cargar los airpods', err))
 
@@ -212,7 +231,7 @@ onMounted(async () => {
     ctx.addTick(() => { if (activePoiId.value && rig.isZoomedOut()) releaseFocus() })
 
     // Handle de verificación en dev (import.meta.dev: no llega al build de prod).
-    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog, getAirpods: () => airpods, getCup: () => cup, getTableSet: () => tableSet, getLaptop: () => laptop } }
+    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog, getAirpods: () => airpods, getCup: () => cup, getTableSet: () => tableSet, getLaptop: () => laptop, getAirpodsMusic: () => airpodsMusic } }
   } catch (err) {
     if (disposed) return
     console.error('Error cargando el modelo', err)
@@ -225,6 +244,8 @@ onUnmounted(() => {
   disposed = true
   unsubscribers.splice(0).forEach(unsub => unsub())
   if (onWheel) ctx?.renderer?.domElement?.removeEventListener('wheel', onWheel)
+  airpodsMusic?.dispose()
+  listener?.removeFromParent()
   interactions?.dispose()
   rig?.dispose()
   dog?.dispose()

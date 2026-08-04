@@ -7,7 +7,7 @@ const T_OPEN = 2.0
 const LYING_X = -Math.PI / 2
 const LIFT = 0.07
 
-export async function createAirpods ({ THREE, scene, position }) {
+export async function createAirpods ({ THREE, scene, position, onIntent }) {
   const draco = new DRACOLoader()
   draco.setDecoderPath('/draco/')
   const loader = new GLTFLoader()
@@ -67,6 +67,9 @@ export async function createAirpods ({ THREE, scene, position }) {
       }
       action.paused = false
       animating = true
+      // Se avisa la intención en el click, no al terminar la animación: así el
+      // fade de la música ya está a volumen cuando la tapa terminó de abrirse.
+      onIntent?.(action.timeScale > 0)
     },
     update (delta) {
       mixer.update(delta)

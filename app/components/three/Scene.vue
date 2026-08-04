@@ -138,7 +138,7 @@ onMounted(async () => {
     placeDecor({
       THREE: ctx.THREE, scene: ctx.scene, url: '/models/cup.glb',
       position: new ctx.THREE.Vector3(0.47, 1.24, 0.68),
-      targetHeight: 0.17, rotationY: Math.PI * 0.75
+      targetHeight: 0.135, rotationY: Math.PI * 0.75
     }).then((obj) => { if (disposed) return; cup = obj; ctx.enableShadows(cup) })
       .catch(err => console.warn('No se pudo cargar el vaso', err))
 

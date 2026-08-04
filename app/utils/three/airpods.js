@@ -1,11 +1,11 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
-const TARGET_WIDTH = 0.14
+const TARGET_WIDTH = 0.06
 const SPEED = 2.2
 const T_OPEN = 2.0
 const LYING_X = -Math.PI / 2
-const LIFT = 0.15
+const LIFT = 0.07
 
 export async function createAirpods ({ THREE, scene, position }) {
   const draco = new DRACOLoader()

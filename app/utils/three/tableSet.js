@@ -1,13 +1,19 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { realBounds } from './measure.js'
 
-const PHOTO_WIDTH = 0.13
+const PHOTO_WIDTH = 0.10
 const CAM_HEIGHT = 0.11
 const SPEED = 1.6
 const LIFT_CAM = 0.34
-const SPIN_CAM = 0.6
+const CAM_SPIN = 0.5
+const CAM_REST_Y = 0.3
 const LIFT_PHOTO = 0.15
-const SHOW_TILT = Math.PI / 2 - 0.6
+const SHOW_TILT_ANGLE = 1.05
+// El frente de la cámara apunta a +Z local (verificado midiendo qué meshes
+// sobresalen). En reposo queda apenas girada; al mostrarse gira hacia el
+// observador de la vista home (~+X/+Z).
+const SHOW_AXIS = [0.6, 0, -0.8]
 
 // El mesh fuente de la polaroid no viene axis-aligned: la tarjeta está modelada
 // con una inclinación compuesta (no es un simple -90° en un solo eje), así que
@@ -53,40 +59,44 @@ export async function createTableSet ({ THREE, scene, position }) {
   photo.quaternion.copy(restQuaternion)
   photo.updateMatrixWorld(true)
 
-  const box1 = new THREE.Box3().setFromObject(photo) // acostada, escala 1
+  const box1 = realBounds(THREE, photo) // acostada, escala 1
   const size1 = box1.getSize(new THREE.Vector3())
   const photoScale = PHOTO_WIDTH / Math.max(size1.x, size1.z)
   photo.scale.setScalar(photoScale)
   photo.updateMatrixWorld(true)
 
-  const box2 = new THREE.Box3().setFromObject(photo) // acostada + escalada
+  const box2 = realBounds(THREE, photo) // acostada + escalada
   const center2 = box2.getCenter(new THREE.Vector3())
   photo.position.x += position.x - center2.x
   photo.position.z += position.z - center2.z
-  photo.position.y += position.y - box2.min.y
+  photo.position.y += position.y + 0.0005 - box2.min.y
   photo.updateMatrixWorld(true)
 
-  const photoBox = new THREE.Box3().setFromObject(photo)
+  const photoBox = realBounds(THREE, photo)
   const photoBaseY = photo.position.y
   const photoTopY = photoBox.max.y
-  const photoCenter = photoBox.getCenter(new THREE.Vector3())
 
-  // --- Cámara: escalar a CAM_HEIGHT de alto, apoyar sobre el tope de la foto, centrada en xz ---
-  const camBox0 = new THREE.Box3().setFromObject(camera)
+  // --- Cámara: apenas girada en reposo (frente a +Z local), escalar a
+  // CAM_HEIGHT de alto, apoyar sobre el tope real de la foto, centrada en xz
+  // sobre `position` ---
+  camera.rotation.y = CAM_REST_Y
+  camera.updateMatrixWorld(true)
+
+  const camBox0 = realBounds(THREE, camera)
   const camSize0 = camBox0.getSize(new THREE.Vector3())
   const camScale = CAM_HEIGHT / camSize0.y
   camera.scale.setScalar(camScale)
   camera.updateMatrixWorld(true)
 
-  const camBox1 = new THREE.Box3().setFromObject(camera)
+  const camBox1 = realBounds(THREE, camera)
   const camCenter1 = camBox1.getCenter(new THREE.Vector3())
-  camera.position.x += photoCenter.x - camCenter1.x
-  camera.position.z += photoCenter.z - camCenter1.z
-  camera.position.y += photoTopY - camBox1.min.y
+  camera.position.x += position.x - camCenter1.x
+  camera.position.z += position.z - camCenter1.z
+  camera.position.y += photoTopY + 0.0005 - camBox1.min.y
   camera.updateMatrixWorld(true)
 
   const camBaseY = camera.position.y
-  const restCamRotY = camera.rotation.y
+  const restCamRotY = CAM_REST_Y
 
   const group = new THREE.Group()
   group.name = '__table-set'
@@ -96,8 +106,16 @@ export async function createTableSet ({ THREE, scene, position }) {
 
   let target = 0
   let p = 0
-  const tiltQuaternion = new THREE.Quaternion()
-  const tiltAxisLocal = new THREE.Vector3(1, 0, 0)
+
+  // Quaternion "mostrada": se levanta hacia el observador de la vista home,
+  // compuesto en espacio MUNDO (premultiplicado) sobre el quaternion de
+  // reposo — no por Euler, que pelea con la orientación compuesta de reposo.
+  const qRest = photo.quaternion.clone()
+  const qDelta = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(...SHOW_AXIS).normalize(),
+    SHOW_TILT_ANGLE
+  )
+  const qShown = qDelta.clone().multiply(qRest)
 
   return {
     object: group,
@@ -112,13 +130,10 @@ export async function createTableSet ({ THREE, scene, position }) {
       const e = p * p * (3 - 2 * p) // smoothstep
 
       camera.position.y = camBaseY + LIFT_CAM * e
-      camera.rotation.y = restCamRotY + SPIN_CAM * e
+      camera.rotation.y = restCamRotY + CAM_SPIN * e
 
       photo.position.y = photoBaseY + LIFT_PHOTO * e
-      // inclinarse para mostrarse: rotación adicional sobre el propio eje X
-      // local de la foto (ya acostada), compuesta después del reposo.
-      tiltQuaternion.setFromAxisAngle(tiltAxisLocal, SHOW_TILT * e)
-      photo.quaternion.copy(restQuaternion).multiply(tiltQuaternion)
+      photo.quaternion.slerpQuaternions(qRest, qShown, e)
     },
     dispose () {
       disposeObject(group)

@@ -1,0 +1,74 @@
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+
+const TARGET_WIDTH = 0.14
+const SPEED = 2.2
+
+export async function createAirpods ({ THREE, scene, position }) {
+  const draco = new DRACOLoader()
+  draco.setDecoderPath('/draco/')
+  const loader = new GLTFLoader()
+  loader.setDRACOLoader(draco)
+  const gltf = await loader.loadAsync('/models/airpods.glb')
+  draco.dispose()
+
+  const object = gltf.scene
+  const box = new THREE.Box3().setFromObject(object)
+  const size = box.getSize(new THREE.Vector3())
+  const scale = TARGET_WIDTH / Math.max(size.x, size.z)
+  object.scale.setScalar(scale)
+  // apoyar la base del case sobre `position` (el min.y escalado toca la mesa)
+  const min = box.min.clone().multiplyScalar(scale)
+  object.position.set(position.x, position.y - min.y, position.z)
+  scene.add(object)
+
+  const mixer = new THREE.AnimationMixer(object)
+  const action = mixer.clipAction(gltf.animations[0])
+  action.setLoop(THREE.LoopOnce)
+  action.clampWhenFinished = true
+  action.play()
+  action.paused = true
+  action.time = 0
+
+  let open = false
+  let animating = false
+
+  const onFinished = (e) => {
+    if (e.action !== action) return
+    animating = false
+    open = e.direction !== -1 // terminó hacia adelante = quedó abierto
+  }
+  mixer.addEventListener('finished', onFinished)
+
+  return {
+    object,
+    toggle () {
+      if (animating) {
+        // invertir el sentido a mitad de animación
+        action.timeScale = -action.timeScale
+      } else if (open) {
+        action.time = action.getClip().duration
+        action.timeScale = -SPEED
+      } else {
+        action.timeScale = SPEED
+      }
+      action.paused = false
+      animating = true
+    },
+    update: delta => mixer.update(delta),
+    dispose () {
+      mixer.stopAllAction()
+      mixer.removeEventListener('finished', onFinished)
+      object.traverse((o) => {
+        o.geometry?.dispose?.()
+        const mats = Array.isArray(o.material) ? o.material : [o.material]
+        for (const m of mats) {
+          if (!m) continue
+          for (const v of Object.values(m)) v?.isTexture && v.dispose()
+          m.dispose?.()
+        }
+      })
+      object.removeFromParent()
+    }
+  }
+}

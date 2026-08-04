@@ -5,6 +5,7 @@ import { createCameraRig } from '~/utils/three/cameraRig'
 import { createInteractions } from '~/utils/three/interactions'
 import { poiAnimations } from '~/utils/three/poiAnimations'
 import { createDog } from '~/utils/three/dog'
+import { createAirpods } from '~/utils/three/airpods'
 import { pois } from '~/data/pois'
 import { onSceneAction, emitSceneAction } from '~/utils/sceneBus'
 
@@ -26,6 +27,7 @@ let model = null
 let rig = null
 let interactions = null
 let dog = null
+let airpods = null
 let disposed = false
 let onWheel = null
 const unsubscribers = []
@@ -99,6 +101,15 @@ onMounted(async () => {
       })
       .catch(err => console.warn('No se pudo cargar el shiba', err))
 
+    createAirpods({ THREE: ctx.THREE, scene: ctx.scene, position: new ctx.THREE.Vector3(0.27, 1.24, 0.39) })
+      .then((a) => {
+        if (disposed) { a.dispose(); return }
+        airpods = a
+        ctx.addTick(delta => airpods.update(delta))
+        interactions.addExtraTarget(airpods.object, () => airpods.toggle())
+      })
+      .catch(err => console.warn('No se pudieron cargar los airpods', err))
+
     const meshesOf = poi => poi ? poi.meshNames.map(n => model.getObjectByName(n)).filter(Boolean) : []
 
     unsubscribers.push(onSceneAction('focusPoi', async (id) => {
@@ -145,7 +156,7 @@ onMounted(async () => {
     ctx.addTick(() => { if (activePoiId.value && rig.isZoomedOut()) releaseFocus() })
 
     // Handle de verificación en dev (import.meta.dev: no llega al build de prod).
-    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog } }
+    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog, getAirpods: () => airpods } }
   } catch (err) {
     if (disposed) return
     console.error('Error cargando el modelo', err)
@@ -161,6 +172,7 @@ onUnmounted(() => {
   interactions?.dispose()
   rig?.dispose()
   dog?.dispose()
+  airpods?.dispose()
   ctx?.dispose()
 })
 </script>

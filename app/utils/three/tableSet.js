@@ -10,6 +10,7 @@ const CAM_SPIN = 0.5
 const CAM_REST_Y = 0.3
 const LIFT_PHOTO = 0.10
 const SHOW_TILT_ANGLE = 1.05
+const SEPARATE = 0.055
 // El frente de la cámara apunta a +Z local (verificado midiendo qué meshes
 // sobresalen). En reposo queda apenas girada; al mostrarse gira hacia el
 // observador de la vista home (~+X/+Z).
@@ -73,7 +74,9 @@ export async function createTableSet ({ THREE, scene, position }) {
   photo.updateMatrixWorld(true)
 
   const photoBox = realBounds(THREE, photo)
+  const photoBaseX = photo.position.x
   const photoBaseY = photo.position.y
+  const photoBaseZ = photo.position.z
   const photoTopY = photoBox.max.y
 
   // --- Cámara: apenas girada en reposo (frente a +Z local), escalar a
@@ -95,7 +98,9 @@ export async function createTableSet ({ THREE, scene, position }) {
   camera.position.y += photoTopY + 0.0005 - camBox1.min.y
   camera.updateMatrixWorld(true)
 
+  const camBaseX = camera.position.x
   const camBaseY = camera.position.y
+  const camBaseZ = camera.position.z
   const restCamRotY = CAM_REST_Y
 
   const group = new THREE.Group()
@@ -111,10 +116,8 @@ export async function createTableSet ({ THREE, scene, position }) {
   // compuesto en espacio MUNDO (premultiplicado) sobre el quaternion de
   // reposo — no por Euler, que pelea con la orientación compuesta de reposo.
   const qRest = photo.quaternion.clone()
-  const qDelta = new THREE.Quaternion().setFromAxisAngle(
-    new THREE.Vector3(...SHOW_AXIS).normalize(),
-    SHOW_TILT_ANGLE
-  )
+  const showAxisNorm = new THREE.Vector3(...SHOW_AXIS).normalize()
+  const qDelta = new THREE.Quaternion().setFromAxisAngle(showAxisNorm, SHOW_TILT_ANGLE)
   const qShown = qDelta.clone().multiply(qRest)
 
   return {
@@ -129,10 +132,14 @@ export async function createTableSet ({ THREE, scene, position }) {
       p = Math.min(1, Math.max(0, p))
       const e = p * p * (3 - 2 * p) // smoothstep
 
+      camera.position.x = camBaseX + showAxisNorm.x * SEPARATE * e
       camera.position.y = camBaseY + LIFT_CAM * e
+      camera.position.z = camBaseZ + showAxisNorm.z * SEPARATE * e
       camera.rotation.y = restCamRotY + CAM_SPIN * e
 
+      photo.position.x = photoBaseX - showAxisNorm.x * SEPARATE * e
       photo.position.y = photoBaseY + LIFT_PHOTO * e
+      photo.position.z = photoBaseZ - showAxisNorm.z * SEPARATE * e
       photo.quaternion.slerpQuaternions(qRest, qShown, e)
     },
     dispose () {

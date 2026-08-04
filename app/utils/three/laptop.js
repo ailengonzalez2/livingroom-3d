@@ -1,6 +1,7 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { realBounds } from './measure.js'
+import { createSocialIcon, disposeSocialIcon } from './socialIcons.js'
 
 const TARGET_WIDTH = 0.28
 const SPEED = 1.6
@@ -9,6 +10,7 @@ const ICON_SIZE = 0.07 // 7 cm de alto
 const ICON_RISE = 0.20 // sube 20 cm sobre la mesa
 const ICON_SPIN = 0.6 // rad/s
 const ICON_BOB = 0.012 // amplitud del cabeceo
+const ICON_GAP = 0.095 // separación lateral entre íconos en fila
 
 export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
   const draco = new DRACOLoader()
@@ -17,16 +19,16 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
   loader.setDRACOLoader(draco)
   const gltf = await loader.loadAsync('/models/laptop.glb')
 
-  let icon = null
-  let iconScale = 1
-  let iconStart = null
-  let iconEnd = null
+  let telegram = null
   try {
-    const iconGltf = await loader.loadAsync('/models/telegram.glb')
-    icon = iconGltf.scene
+    const telegramGltf = await loader.loadAsync('/models/telegram.glb')
+    telegram = telegramGltf.scene
   } catch (err) {
     console.warn('createLaptop: no se pudo cargar el ícono de telegram', err)
   }
+
+  const linkedin = createSocialIcon({ THREE, kind: 'linkedin' })
+  const xIcon = createSocialIcon({ THREE, kind: 'x' })
 
   draco.dispose()
 
@@ -51,17 +53,43 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
   object.position.y += position.y - box1.min.y
   object.updateMatrixWorld(true)
 
-  if (icon) {
-    const iconBox0 = realBounds(THREE, icon)
-    const iconSize0 = iconBox0.getSize(new THREE.Vector3())
-    iconScale = ICON_SIZE / Math.max(iconSize0.x, iconSize0.y, iconSize0.z)
-    icon.scale.setScalar(iconScale)
-    icon.visible = false
+  // eje perpendicular a la línea de visión de la vista home: los deja en fila
+  const ROW_AXIS = new THREE.Vector3(0.6, 0, -0.8).normalize()
+
+  // [objeto, offset lateral, retardo de aparición]
+  const iconConfigs = [
+    { obj: telegram, side: -1, delay: 0.00 },
+    { obj: linkedin, side: 0, delay: 0.06 },
+    { obj: xIcon, side: 1, delay: 0.12 }
+  ]
+
+  const icons = []
+  for (const cfg of iconConfigs) {
+    const obj = cfg.obj
+    if (!obj) continue
+
+    let iconScale
+    if (obj === telegram) {
+      const iconBox0 = realBounds(THREE, obj)
+      const iconSize0 = iconBox0.getSize(new THREE.Vector3())
+      iconScale = ICON_SIZE / Math.max(iconSize0.x, iconSize0.y, iconSize0.z)
+    } else {
+      // discos de socialIcons.js: diámetro 1, así que la escala es directamente ICON_SIZE
+      iconScale = ICON_SIZE
+    }
+
+    obj.scale.setScalar(iconScale)
+    obj.visible = false
     // NO como hijo de la laptop: no debe heredar su escala/rotación
-    scene.add(icon)
-    iconStart = position.clone().add(new THREE.Vector3(0, 0.03, 0))
-    iconEnd = position.clone().add(new THREE.Vector3(0, ICON_RISE, 0))
-    icon.position.copy(iconStart)
+    scene.add(obj)
+
+    const start = position.clone().add(new THREE.Vector3(0, 0.03, 0))
+    const end = position.clone()
+      .add(ROW_AXIS.clone().multiplyScalar(cfg.side * ICON_GAP))
+      .add(new THREE.Vector3(0, ICON_RISE, 0))
+    obj.position.copy(start)
+
+    icons.push({ obj, scale: iconScale, start, end, delay: cfg.delay })
   }
 
   const screens = []
@@ -101,19 +129,20 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
       if (lid) lid.quaternion.slerpQuaternions(qClosed, qOpen, e)
       for (const m of screens) m.emissiveIntensity = e
 
-      if (icon) {
-        // el ícono recién emerge cuando la tapa ya está bastante abierta
-        const q = Math.min(Math.max((e - 0.45) / 0.55, 0), 1)
+      if (icons.length) clock += delta
+      icons.forEach((it, i) => {
+        // el ícono recién emerge cuando la tapa ya está bastante abierta,
+        // con un retardo propio para lograr un efecto de cascada
+        const q = Math.min(Math.max((e - 0.45 - it.delay) / 0.55, 0), 1)
         const qe = q * q * (3 - 2 * q)
-        icon.visible = qe > 0.001
-        icon.scale.setScalar(iconScale * qe) // crece desde 0 (efecto "sale de adentro")
-        icon.position.lerpVectors(iconStart, iconEnd, qe)
+        it.obj.visible = qe > 0.001
+        it.obj.scale.setScalar(it.scale * qe) // crece desde 0 (efecto "sale de adentro")
+        it.obj.position.lerpVectors(it.start, it.end, qe)
         if (qe > 0) {
-          clock += delta
-          icon.rotation.y += ICON_SPIN * delta
-          icon.position.y += Math.sin(clock * 1.6) * ICON_BOB * qe // cabeceo suave al flotar
+          it.obj.rotation.y += ICON_SPIN * delta
+          it.obj.position.y += Math.sin(clock * 1.6 + i) * ICON_BOB * qe // cabeceo suave al flotar, desfasado
         }
-      }
+      })
     },
     dispose () {
       object.traverse((o) => {
@@ -128,8 +157,8 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
       })
       object.removeFromParent()
 
-      if (icon) {
-        icon.traverse((o) => {
+      if (telegram) {
+        telegram.traverse((o) => {
           o.geometry?.dispose?.()
           const mats = Array.isArray(o.material) ? o.material : [o.material]
           for (const m of mats) {
@@ -139,8 +168,11 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
           }
           o.skeleton?.dispose()
         })
-        icon.removeFromParent()
+        telegram.removeFromParent()
       }
+
+      disposeSocialIcon(linkedin)
+      disposeSocialIcon(xIcon)
     }
   }
 }

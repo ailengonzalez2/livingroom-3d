@@ -10,7 +10,9 @@
     "optimize-model": "gltf-transform optimize model-source/scene.gltf public/models/loft.glb --compress draco --texture-compress webp --join false",
     "optimize-dog": "gltf-transform optimize model-source/shiba.glb public/models/shiba.glb --compress draco --texture-compress webp --join false",
     "optimize-airpods": "gltf-transform optimize model-source/airpods/scene.gltf public/models/airpods.glb --compress draco --texture-compress webp --join false",
-    "optimize-cup": "gltf-transform optimize model-source/starbucks-cup/scene.gltf public/models/cup.glb --compress draco --texture-compress webp --join false"
+    "optimize-cup": "gltf-transform optimize model-source/starbucks-cup/scene.gltf public/models/cup.glb --compress draco --texture-compress webp --join false",
+    "optimize-instax": "gltf-transform optimize model-source/instax/scene.gltf public/models/instax.glb --compress draco --texture-compress webp --texture-size 1024 --join false",
+    "optimize-polaroid": "gltf-transform optimize model-source/polaroid/scene.gltf public/models/polaroid.glb --compress draco --texture-compress webp --texture-size 1024 --join false"
   },
   "dependencies": {
     "@nuxt/ui": "^4.10.0",

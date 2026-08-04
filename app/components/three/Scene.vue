@@ -7,6 +7,7 @@ import { poiAnimations } from '~/utils/three/poiAnimations'
 import { createDog } from '~/utils/three/dog'
 import { createAirpods } from '~/utils/three/airpods'
 import { placeDecor } from '~/utils/three/decor'
+import { createTableSet } from '~/utils/three/tableSet'
 import { pois } from '~/data/pois'
 import { onSceneAction, emitSceneAction } from '~/utils/sceneBus'
 
@@ -30,6 +31,7 @@ let interactions = null
 let dog = null
 let airpods = null
 let cup = null
+let tableSet = null
 let disposed = false
 let onWheel = null
 const unsubscribers = []
@@ -74,6 +76,22 @@ onMounted(async () => {
       onPoiClick: id => emitSceneAction('focusPoi', id),
       onMissClick: () => { if (activePoiId.value) emitSceneAction('resetCamera') }
     })
+
+    // brillo de base de la lámpara colgante
+    for (const name of ['Sphere_metal_0', `Cylinder007_${'�'.repeat(8)}_0`]) {
+      const mesh = model.getObjectByName(name)
+      if (!mesh?.material?.emissive) continue
+      mesh.material.emissive.setHex(0xffd9a0)
+      mesh.material.emissiveIntensity = 0.55
+    }
+    const esfera = model.getObjectByName('Sphere_metal_0')
+    if (esfera) {
+      const c = new ctx.THREE.Box3().setFromObject(esfera).getCenter(new ctx.THREE.Vector3())
+      const lampBase = new ctx.THREE.PointLight(0xffc9a0, 1.3, 4, 1.8)
+      lampBase.position.copy(c)
+      lampBase.name = '__lamp-base'
+      ctx.scene.add(lampBase)
+    }
 
     let lastScroll = 0
     onWheel = () => { lastScroll = performance.now() }
@@ -122,6 +140,16 @@ onMounted(async () => {
     }).then((obj) => { if (disposed) return; cup = obj; ctx.enableShadows(cup) })
       .catch(err => console.warn('No se pudo cargar el vaso', err))
 
+    createTableSet({ THREE: ctx.THREE, scene: ctx.scene, position: new ctx.THREE.Vector3(0.08, 1.24, 0.70) })
+      .then((t) => {
+        if (disposed) { t.dispose(); return }
+        tableSet = t
+        ctx.enableShadows(tableSet.object)
+        ctx.addTick(d => tableSet.update(d))
+        interactions.addExtraTarget(tableSet.object, () => tableSet.toggle())
+      })
+      .catch(err => console.warn('No se pudo cargar el set de foto y cámara', err))
+
     const meshesOf = poi => poi ? poi.meshNames.map(n => model.getObjectByName(n)).filter(Boolean) : []
 
     unsubscribers.push(onSceneAction('focusPoi', async (id) => {
@@ -168,7 +196,7 @@ onMounted(async () => {
     ctx.addTick(() => { if (activePoiId.value && rig.isZoomedOut()) releaseFocus() })
 
     // Handle de verificación en dev (import.meta.dev: no llega al build de prod).
-    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog, getAirpods: () => airpods, getCup: () => cup } }
+    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog, getAirpods: () => airpods, getCup: () => cup, getTableSet: () => tableSet } }
   } catch (err) {
     if (disposed) return
     console.error('Error cargando el modelo', err)
@@ -185,6 +213,7 @@ onUnmounted(() => {
   rig?.dispose()
   dog?.dispose()
   airpods?.dispose()
+  tableSet?.dispose()
   ctx?.dispose()
 })
 </script>

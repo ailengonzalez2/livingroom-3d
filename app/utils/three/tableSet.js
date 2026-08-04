@@ -84,7 +84,8 @@ export async function createTableSet ({ THREE, scene, position }) {
   // CAM_HEIGHT de alto, apoyar sobre el tope real de la foto, centrada en xz
   // sobre `position` ---
   const camRestY = Math.atan2(FRONT.x, FRONT.z)
-  camera.rotation.y = camRestY
+  // El frente del modelo (lente) mira al -Z local, por eso el giro de 180°.
+  camera.rotation.y = camRestY + Math.PI
   camera.updateMatrixWorld(true)
 
   const camBox0 = realBounds(THREE, camera)

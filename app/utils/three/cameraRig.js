@@ -27,14 +27,24 @@ export function createCameraRig ({ THREE, camera, domElement, model, bounds = nu
   }
   controls.setLookAt(...home.pos, ...home.target, false)
 
+  let fittedDistance = null
+
   return {
     update: delta => controls.update(delta),
-    focusObject (object3d, padding = 0.35) {
-      return controls.fitToBox(object3d, true, {
+    async focusObject (object3d, padding = 0.35) {
+      await controls.fitToBox(object3d, true, {
         paddingLeft: padding, paddingRight: padding, paddingTop: padding, paddingBottom: padding
       })
+      fittedDistance = controls.distance
     },
-    reset: () => controls.setLookAt(...home.pos, ...home.target, true),
+    isZoomedOut (factor = 1.7) {
+      return fittedDistance !== null && controls.distance > fittedDistance * factor
+    },
+    clearFocusDistance () { fittedDistance = null },
+    reset () {
+      fittedDistance = null
+      return controls.setLookAt(...home.pos, ...home.target, true)
+    },
     setEnabled (v) { controls.enabled = v },
     dispose: () => controls.dispose()
   }

@@ -25,7 +25,8 @@ const { toggleMute } = useAudio()
       <template #content>
         <div class="max-w-60 p-3 text-xs text-neutral-500 dark:text-neutral-400">
           Arrastrá para orbitar, usá la rueda para acercarte y hacé click en los
-          objetos iluminados para conocerlos.
+          objetos iluminados para conocerlos. Para salir de un objeto, alejate
+          con la rueda.
         </div>
       </template>
     </UPopover>

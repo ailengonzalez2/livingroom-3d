@@ -28,11 +28,6 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
         </div>
       </template>
       <p class="text-sm text-neutral-500 dark:text-neutral-400">{{ poi.description }}</p>
-      <template #footer>
-        <UButton icon="i-lucide-undo-2" variant="soft" block @click="close">
-          Volver a la vista general
-        </UButton>
-      </template>
     </UCard>
   </Transition>
 </template>

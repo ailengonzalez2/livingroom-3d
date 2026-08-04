@@ -102,8 +102,8 @@ onMounted(async () => {
     const meshesOf = poi => poi ? poi.meshNames.map(n => model.getObjectByName(n)).filter(Boolean) : []
 
     unsubscribers.push(onSceneAction('focusPoi', async (id) => {
-      // Guard de re-entrada: el canvas sigue clickeable con un POI enfocado
-      // (setEnabled(false) solo apaga CameraControls), así que un segundo
+      // Guard de re-entrada: con un POI enfocado la cámara sigue habilitada
+      // (se puede orbitar/zoomear sobre el objeto), así que un segundo
       // click sobre el mismo POI no debe re-disparar onFocus.
       if (id === activePoiId.value) return
       const obj = interactions.getPoiObject(id)
@@ -121,19 +121,28 @@ onMounted(async () => {
         poiAnimations[prevPoi?.animation]?.onBlur({ THREE: ctx.THREE, scene: ctx.scene, meshes: meshesOf(prevPoi) })
       }
       activePoiId.value = id
-      rig.setEnabled(false)
       const poi = pois.find(p => p.id === id)
       poiAnimations[poi?.animation]?.onFocus({ THREE: ctx.THREE, scene: ctx.scene, meshes: meshesOf(poi) })
       await rig.focusObject(obj, poi?.cameraPadding)
     }))
 
-    unsubscribers.push(onSceneAction('resetCamera', async () => {
+    function closePoi () {
       const prev = pois.find(p => p.id === activePoiId.value)
       poiAnimations[prev?.animation]?.onBlur({ THREE: ctx.THREE, scene: ctx.scene, meshes: meshesOf(prev) })
       activePoiId.value = null
+    }
+
+    function releaseFocus () {
+      closePoi()
+      rig.clearFocusDistance()
+    }
+
+    unsubscribers.push(onSceneAction('resetCamera', async () => {
+      closePoi()
       await rig.reset()
-      rig.setEnabled(true)
     }))
+
+    ctx.addTick(() => { if (activePoiId.value && rig.isZoomedOut()) releaseFocus() })
 
     // Handle de verificación en dev (import.meta.dev: no llega al build de prod).
     if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog } }

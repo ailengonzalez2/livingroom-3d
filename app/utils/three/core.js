@@ -1,6 +1,23 @@
 import * as THREE from 'three'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 
+function makeSunsetBackground () {
+  const c = document.createElement('canvas')
+  c.width = 2
+  c.height = 1024
+  const g = c.getContext('2d')
+  const grad = g.createLinearGradient(0, 0, 0, 1024)
+  grad.addColorStop(0.0, '#8f8ab5')
+  grad.addColorStop(0.45, '#b3a6c6')
+  grad.addColorStop(0.75, '#cfb3bd')
+  grad.addColorStop(1.0, '#e2c1a4')
+  g.fillStyle = grad
+  g.fillRect(0, 0, 2, 1024)
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
 export function webglAvailable () {
   try {
     const c = document.createElement('canvas')
@@ -15,11 +32,13 @@ export function createThree (container) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.0
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   container.appendChild(renderer.domElement)
 
   const scene = new THREE.Scene()
+  scene.background = makeSunsetBackground()
 
   let envDisposed = false
   new RGBELoader().load('/hdri/dusk.hdr', (hdr) => {
@@ -27,18 +46,15 @@ export function createThree (container) {
     const pmrem = new THREE.PMREMGenerator(renderer)
     const envMap = pmrem.fromEquirectangular(hdr).texture
     pmrem.dispose()
-    hdr.mapping = THREE.EquirectangularReflectionMapping
+    hdr.dispose()
     scene.environment = envMap
-    scene.background = hdr
-    scene.backgroundBlurriness = 0.35
-    scene.backgroundIntensity = 0.9
-    scene.environmentIntensity = 0.9
+    scene.environmentIntensity = 0.35
   })
 
   const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 200)
   camera.position.set(4, 3, 6)
 
-  scene.add(new THREE.AmbientLight(0xffe9d6, 0.15))
+  scene.add(new THREE.AmbientLight(0xffe9d6, 0.55))
   const sun = new THREE.DirectionalLight(0xffc9a0, 2.5)
   sun.position.set(-2, 7, -12)
   sun.target.position.set(0, 0, 0)

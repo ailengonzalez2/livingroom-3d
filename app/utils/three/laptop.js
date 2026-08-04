@@ -8,11 +8,10 @@ const SPEED = 1.6
 
 const ICON_SIZE = 0.07 // 7 cm de alto
 const ICON_RISE = 0.20 // sube 20 cm sobre la mesa
-const ICON_SPIN = 0.6 // rad/s
 const ICON_BOB = 0.012 // amplitud del cabeceo
 const ICON_GAP = 0.095 // separación lateral entre íconos en fila
 
-export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
+export async function createLaptop ({ THREE, scene, camera, position, rotationY = 0 }) {
   const draco = new DRACOLoader()
   draco.setDecoderPath('/draco/')
   const loader = new GLTFLoader()
@@ -139,7 +138,8 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
         it.obj.scale.setScalar(it.scale * qe) // crece desde 0 (efecto "sale de adentro")
         it.obj.position.lerpVectors(it.start, it.end, qe)
         if (qe > 0) {
-          it.obj.rotation.y += ICON_SPIN * delta
+          // billboard horizontal: siempre de frente a la cámara, para que el logo sea legible
+          it.obj.rotation.y = Math.atan2(camera.position.x - it.obj.position.x, camera.position.z - it.obj.position.z)
           it.obj.position.y += Math.sin(clock * 1.6 + i) * ICON_BOB * qe // cabeceo suave al flotar, desfasado
         }
       })

@@ -153,7 +153,7 @@ onMounted(async () => {
       .catch(err => console.warn('No se pudo cargar el set de foto y cámara', err))
 
     createLaptop({
-      THREE: ctx.THREE, scene: ctx.scene,
+      THREE: ctx.THREE, scene: ctx.scene, camera: ctx.camera,
       position: new ctx.THREE.Vector3(0.30, 1.24, 0.10),
       rotationY: Math.PI * 0.3
     })

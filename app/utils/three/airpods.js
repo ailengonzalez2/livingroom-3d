@@ -3,6 +3,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
 const TARGET_WIDTH = 0.14
 const SPEED = 2.2
+const T_OPEN = 2.0
 
 export async function createAirpods ({ THREE, scene, position }) {
   const draco = new DRACOLoader()
@@ -35,8 +36,11 @@ export async function createAirpods ({ THREE, scene, position }) {
 
   const onFinished = (e) => {
     if (e.action !== action) return
+    // el clip original es ida y vuelta (abre y luego se vuelve a cerrar solo);
+    // la apertura se corta antes con el tope T_OPEN en update(), así que este
+    // handler solo puede dispararse en la reversa (cierre, dirección -1).
     animating = false
-    open = e.direction !== -1 // terminó hacia adelante = quedó abierto
+    open = false
   }
   mixer.addEventListener('finished', onFinished)
 
@@ -47,7 +51,6 @@ export async function createAirpods ({ THREE, scene, position }) {
         // invertir el sentido a mitad de animación
         action.timeScale = -action.timeScale
       } else if (open) {
-        action.time = action.getClip().duration
         action.timeScale = -SPEED
       } else {
         action.timeScale = SPEED
@@ -55,7 +58,15 @@ export async function createAirpods ({ THREE, scene, position }) {
       action.paused = false
       animating = true
     },
-    update: delta => mixer.update(delta),
+    update (delta) {
+      mixer.update(delta)
+      if (!action.paused && action.timeScale > 0 && action.time >= T_OPEN) {
+        action.time = T_OPEN
+        action.paused = true
+        animating = false
+        open = true
+      }
+    },
     dispose () {
       mixer.stopAllAction()
       mixer.removeEventListener('finished', onFinished)

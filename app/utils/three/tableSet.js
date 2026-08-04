@@ -5,10 +5,10 @@ import { realBounds } from './measure.js'
 const PHOTO_WIDTH = 0.10
 const CAM_HEIGHT = 0.11
 const SPEED = 1.6
-const LIFT_CAM = 0.34
+const LIFT_CAM = 0.14
 const CAM_SPIN = 0.5
 const CAM_REST_Y = 0.3
-const LIFT_PHOTO = 0.15
+const LIFT_PHOTO = 0.10
 const SHOW_TILT_ANGLE = 1.05
 // El frente de la cámara apunta a +Z local (verificado midiendo qué meshes
 // sobresalen). En reposo queda apenas girada; al mostrarse gira hacia el

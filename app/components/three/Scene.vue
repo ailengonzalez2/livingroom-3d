@@ -6,6 +6,7 @@ import { createInteractions } from '~/utils/three/interactions'
 import { poiAnimations } from '~/utils/three/poiAnimations'
 import { createDog } from '~/utils/three/dog'
 import { createAirpods } from '~/utils/three/airpods'
+import { placeDecor } from '~/utils/three/decor'
 import { pois } from '~/data/pois'
 import { onSceneAction, emitSceneAction } from '~/utils/sceneBus'
 
@@ -28,6 +29,7 @@ let rig = null
 let interactions = null
 let dog = null
 let airpods = null
+let cup = null
 let disposed = false
 let onWheel = null
 const unsubscribers = []
@@ -110,6 +112,13 @@ onMounted(async () => {
       })
       .catch(err => console.warn('No se pudieron cargar los airpods', err))
 
+    placeDecor({
+      THREE: ctx.THREE, scene: ctx.scene, url: '/models/cup.glb',
+      position: new ctx.THREE.Vector3(0.47, 1.24, 0.68),
+      targetHeight: 0.17, rotationY: Math.PI * 0.75
+    }).then((obj) => { if (disposed) return; cup = obj })
+      .catch(err => console.warn('No se pudo cargar el vaso', err))
+
     const meshesOf = poi => poi ? poi.meshNames.map(n => model.getObjectByName(n)).filter(Boolean) : []
 
     unsubscribers.push(onSceneAction('focusPoi', async (id) => {
@@ -156,7 +165,7 @@ onMounted(async () => {
     ctx.addTick(() => { if (activePoiId.value && rig.isZoomedOut()) releaseFocus() })
 
     // Handle de verificación en dev (import.meta.dev: no llega al build de prod).
-    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog, getAirpods: () => airpods } }
+    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog, getAirpods: () => airpods, getCup: () => cup } }
   } catch (err) {
     if (disposed) return
     console.error('Error cargando el modelo', err)

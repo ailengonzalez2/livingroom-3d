@@ -1,4 +1,10 @@
-export function createInteractions ({ THREE, renderer, camera, model, pois, onPoiClick, onMissClick }) {
+function isDescendantOf (obj, root) {
+  let o = obj
+  while (o) { if (o === root) return true; o = o.parent }
+  return false
+}
+
+export function createInteractions ({ THREE, renderer, camera, scene, model, pois, onPoiClick, onMissClick }) {
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
   const dom = renderer.domElement
@@ -20,7 +26,6 @@ export function createInteractions ({ THREE, renderer, camera, model, pois, onPo
     poiMeshes.set(poi.id, meshes)
   }
 
-  const interactive = [...meshToPoi.keys()]
   let hovered = null
 
   // Targets adicionales (no-POI) que reaccionan al click, ej. el shiba.
@@ -34,23 +39,14 @@ export function createInteractions ({ THREE, renderer, camera, model, pois, onPo
     pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)
     raycaster.setFromCamera(pointer, camera)
 
-    let bestMesh = null
-    let bestExtra = null
-    let bestDistance = Infinity
-
-    const meshHit = raycaster.intersectObjects(interactive, false)[0]
-    if (meshHit) { bestMesh = meshHit.object; bestDistance = meshHit.distance }
-
-    for (const entry of extras) {
-      const hit = raycaster.intersectObject(entry.object, true)[0]
-      if (hit && hit.distance < bestDistance) {
-        bestDistance = hit.distance
-        bestExtra = entry
-        bestMesh = null
-      }
-    }
-
-    return { mesh: bestMesh, extra: bestExtra }
+    // Se raycastea la escena entera para respetar la oclusión: solo cuenta lo
+    // que el usuario ve primero. Si delante del POI hay un mueble no
+    // interactivo (la mesa, una pared), el click no lo atraviesa.
+    const hit = raycaster.intersectObjects(scene.children, true)[0]
+    if (!hit) return { mesh: null, extra: null }
+    if (meshToPoi.has(hit.object)) return { mesh: hit.object, extra: null }
+    const extra = extras.find(en => isDescendantOf(hit.object, en.object))
+    return { mesh: null, extra: extra ?? null }
   }
 
   function setHighlight (mesh, on) {

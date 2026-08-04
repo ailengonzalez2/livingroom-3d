@@ -82,6 +82,7 @@ onMounted(async () => {
       THREE: ctx.THREE,
       renderer: ctx.renderer,
       camera: ctx.camera,
+      scene: ctx.scene,
       model,
       pois,
       onPoiClick: id => emitSceneAction('focusPoi', id),

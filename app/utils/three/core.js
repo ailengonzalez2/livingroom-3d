@@ -7,10 +7,10 @@ function makeSunsetBackground () {
   c.height = 1024
   const g = c.getContext('2d')
   const grad = g.createLinearGradient(0, 0, 0, 1024)
-  grad.addColorStop(0.0, '#8f8ab5')
-  grad.addColorStop(0.45, '#b3a6c6')
-  grad.addColorStop(0.75, '#cfb3bd')
-  grad.addColorStop(1.0, '#e2c1a4')
+  grad.addColorStop(0.0, '#565179')
+  grad.addColorStop(0.45, '#7d6f94')
+  grad.addColorStop(0.75, '#9c7f8d')
+  grad.addColorStop(1.0, '#b98d72')
   g.fillStyle = grad
   g.fillRect(0, 0, 2, 1024)
   const tex = new THREE.CanvasTexture(c)
@@ -55,9 +55,10 @@ export function createThree (container) {
   camera.position.set(4, 3, 6)
 
   scene.add(new THREE.AmbientLight(0xffe9d6, 0.55))
-  const sun = new THREE.DirectionalLight(0xffc9a0, 2.5)
-  sun.position.set(-2, 7, -12)
-  sun.target.position.set(0, 0, 0)
+  const sun = new THREE.DirectionalLight(0xffc9a0)
+  sun.position.set(0.8, 7.5, -7.5)
+  sun.intensity = 3.4
+  sun.target.position.set(0.3, 0.9, 0.6)
   sun.castShadow = true
   sun.shadow.mapSize.set(2048, 2048)
   sun.shadow.camera.near = 1

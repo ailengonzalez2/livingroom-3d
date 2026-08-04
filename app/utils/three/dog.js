@@ -94,10 +94,13 @@ export async function createDog ({ THREE, scene, floorY, waypoints, chairs = [] 
       return
     }
     if (e.action === actions.rest) {
-      resting = false
-      actions.rest.stop()
-      actions[current].reset().fadeIn(0.2).play()
-      idleTime = 0
+      if (e.direction === -1) {
+        resting = false
+        actions.rest.stop()
+        actions[current].reset().fadeIn(0.2).play()
+        idleTime = 0
+      }
+      // dirección +1: terminó de echarse — el clamp mantiene la pose, no hacer nada
     }
   }
   mixer.addEventListener('finished', onFinished)

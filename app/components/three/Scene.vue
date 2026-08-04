@@ -48,6 +48,7 @@ onMounted(async () => {
     model = await loadModel((pct) => { loading.value = { active: true, progress: pct } })
     if (disposed) return
     ctx.scene.add(model)
+    ctx.enableShadows(model)
 
     // Bounds del interior del loft (piso + cielorraso), para no incluir los
     // edificios exteriores del fondo al calcular límites/encuadre de cámara.
@@ -98,6 +99,7 @@ onMounted(async () => {
       .then((d) => {
         if (disposed) { d.dispose(); return }
         dog = d
+        ctx.enableShadows(dog.object)
         ctx.addTick(delta => dog.update(delta))
         interactions.addExtraTarget(dog.object, () => dog.jump())
       })
@@ -107,6 +109,7 @@ onMounted(async () => {
       .then((a) => {
         if (disposed) { a.dispose(); return }
         airpods = a
+        ctx.enableShadows(airpods.object)
         ctx.addTick(delta => airpods.update(delta))
         interactions.addExtraTarget(airpods.object, () => airpods.toggle())
       })
@@ -116,7 +119,7 @@ onMounted(async () => {
       THREE: ctx.THREE, scene: ctx.scene, url: '/models/cup.glb',
       position: new ctx.THREE.Vector3(0.47, 1.24, 0.68),
       targetHeight: 0.17, rotationY: Math.PI * 0.75
-    }).then((obj) => { if (disposed) return; cup = obj })
+    }).then((obj) => { if (disposed) return; cup = obj; ctx.enableShadows(cup) })
       .catch(err => console.warn('No se pudo cargar el vaso', err))
 
     const meshesOf = poi => poi ? poi.meshNames.map(n => model.getObjectByName(n)).filter(Boolean) : []

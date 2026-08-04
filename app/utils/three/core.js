@@ -1,22 +1,5 @@
 import * as THREE from 'three'
-
-function makeSunsetBackground (container) {
-  const c = document.createElement('canvas')
-  c.width = 2
-  c.height = 1024
-  const g = c.getContext('2d')
-  const grad = g.createLinearGradient(0, 0, 0, 1024)
-  grad.addColorStop(0.0, '#0d0f2b')   // índigo nocturno
-  grad.addColorStop(0.38, '#2e2350')  // púrpura profundo
-  grad.addColorStop(0.62, '#7a3b5e')  // rosa viejo
-  grad.addColorStop(0.82, '#c95b3f')  // naranja atardecer
-  grad.addColorStop(1.0, '#e8975a')   // ámbar cálido en el horizonte
-  g.fillStyle = grad
-  g.fillRect(0, 0, 2, 1024)
-  const tex = new THREE.CanvasTexture(c)
-  tex.colorSpace = THREE.SRGBColorSpace
-  return tex
-}
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 
 export function webglAvailable () {
   try {
@@ -32,18 +15,45 @@ export function createThree (container) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
   container.appendChild(renderer.domElement)
 
   const scene = new THREE.Scene()
-  scene.background = makeSunsetBackground()
+
+  let envDisposed = false
+  new RGBELoader().load('/hdri/dusk.hdr', (hdr) => {
+    if (envDisposed) { hdr.dispose(); return }
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const envMap = pmrem.fromEquirectangular(hdr).texture
+    pmrem.dispose()
+    hdr.mapping = THREE.EquirectangularReflectionMapping
+    scene.environment = envMap
+    scene.background = hdr
+    scene.backgroundBlurriness = 0.35
+    scene.backgroundIntensity = 0.9
+    scene.environmentIntensity = 0.9
+  })
 
   const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 200)
   camera.position.set(4, 3, 6)
 
-  scene.add(new THREE.AmbientLight(0xffe9d6, 0.7))
-  const sun = new THREE.DirectionalLight(0xffd9b3, 1.4)
-  sun.position.set(8, 6, 4)
+  scene.add(new THREE.AmbientLight(0xffe9d6, 0.15))
+  const sun = new THREE.DirectionalLight(0xffc9a0, 2.5)
+  sun.position.set(-2, 7, -12)
+  sun.target.position.set(0, 0, 0)
+  sun.castShadow = true
+  sun.shadow.mapSize.set(2048, 2048)
+  sun.shadow.camera.near = 1
+  sun.shadow.camera.far = 40
+  sun.shadow.camera.left = -12
+  sun.shadow.camera.right = 12
+  sun.shadow.camera.top = 12
+  sun.shadow.camera.bottom = -12
+  sun.shadow.bias = -0.0005
+  sun.shadow.normalBias = 0.02
   scene.add(sun)
+  scene.add(sun.target)
 
   const clock = new THREE.Clock()
   const tickers = new Set()
@@ -74,7 +84,16 @@ export function createThree (container) {
     camera,
     addTick: fn => { tickers.add(fn); return () => tickers.delete(fn) },
     start: () => { if (raf === null) loop() },
+    enableShadows: (root) => {
+      root.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true
+          o.receiveShadow = true
+        }
+      })
+    },
     dispose () {
+      envDisposed = true
       if (raf !== null) cancelAnimationFrame(raf)
       ro.disconnect()
       scene.traverse((obj) => {
@@ -86,6 +105,7 @@ export function createThree (container) {
           m.dispose?.()
         }
       })
+      scene.environment?.dispose?.()
       scene.background?.dispose?.()
       renderer.dispose()
       renderer.domElement.remove()

@@ -28,3 +28,9 @@ Un perro Shiba Inu (Quaternius, CC0, `model-source/shiba.glb`) vive en el piso d
 ## Fuera de alcance
 
 Ladrido/sonido del perro, seguimiento al usuario, colisiones físicas con muebles, más animales, panel de info del perro.
+
+## Iteración post-cierre (2026-08-03, pedidos del usuario)
+
+- **Ruta frontal:** los waypoints cruzan el living por delante de los sillones (derecha de la mesa → frente del sillón del fondo → pasillo sofá/mesa → frente de los sillones de la ventana), en vez del perímetro junto al ventanal.
+- **Salto a sillón:** el click alterna — en el piso salta al sillón más cercano (parábola sincronizada con `Gallop_Jump`, aterriza en el asiento a `box.min.y + altura*0.45`) y queda en idle arriba (el scroll se ignora); otro click lo baja a un punto de piso libre y retoma su rutina. Config de sillones derivada en Scene.vue de los bboxes de `node_0005/0006/0007_Material007_0`.
+- La orientación del modelo es +Z en reposo (un fix intermedio que asumió −Z fue revertido; evidencia: vector Head−Body vs rotY).

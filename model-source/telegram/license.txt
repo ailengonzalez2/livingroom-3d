@@ -1,0 +1,11 @@
+Model Information:
+* title:	Telegram 3D-icon
+* source:	https://sketchfab.com/3d-models/telegram-3d-icon-80421c5d474f4a3c8145ba4b9aaa7d2d
+* author:	AlbertVictory (https://sketchfab.com/albert_victory)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Telegram 3D-icon" (https://sketchfab.com/3d-models/telegram-3d-icon-80421c5d474f4a3c8145ba4b9aaa7d2d) by AlbertVictory (https://sketchfab.com/albert_victory) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

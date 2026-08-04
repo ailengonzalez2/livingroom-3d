@@ -5,12 +5,29 @@ import { realBounds } from './measure.js'
 const TARGET_WIDTH = 0.28
 const SPEED = 1.6
 
+const ICON_SIZE = 0.07 // 7 cm de alto
+const ICON_RISE = 0.20 // sube 20 cm sobre la mesa
+const ICON_SPIN = 0.6 // rad/s
+const ICON_BOB = 0.012 // amplitud del cabeceo
+
 export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
   const draco = new DRACOLoader()
   draco.setDecoderPath('/draco/')
   const loader = new GLTFLoader()
   loader.setDRACOLoader(draco)
   const gltf = await loader.loadAsync('/models/laptop.glb')
+
+  let icon = null
+  let iconScale = 1
+  let iconStart = null
+  let iconEnd = null
+  try {
+    const iconGltf = await loader.loadAsync('/models/telegram.glb')
+    icon = iconGltf.scene
+  } catch (err) {
+    console.warn('createLaptop: no se pudo cargar el ícono de telegram', err)
+  }
+
   draco.dispose()
 
   const object = gltf.scene
@@ -34,6 +51,19 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
   object.position.y += position.y - box1.min.y
   object.updateMatrixWorld(true)
 
+  if (icon) {
+    const iconBox0 = realBounds(THREE, icon)
+    const iconSize0 = iconBox0.getSize(new THREE.Vector3())
+    iconScale = ICON_SIZE / Math.max(iconSize0.x, iconSize0.y, iconSize0.z)
+    icon.scale.setScalar(iconScale)
+    icon.visible = false
+    // NO como hijo de la laptop: no debe heredar su escala/rotación
+    scene.add(icon)
+    iconStart = position.clone().add(new THREE.Vector3(0, 0.03, 0))
+    iconEnd = position.clone().add(new THREE.Vector3(0, ICON_RISE, 0))
+    icon.position.copy(iconStart)
+  }
+
   const screens = []
   object.traverse((o) => {
     if (!o.isMesh) return
@@ -54,6 +84,7 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
 
   let target = 0
   let p = 0
+  let clock = 0
 
   return {
     object,
@@ -69,6 +100,20 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
 
       if (lid) lid.quaternion.slerpQuaternions(qClosed, qOpen, e)
       for (const m of screens) m.emissiveIntensity = e
+
+      if (icon) {
+        // el ícono recién emerge cuando la tapa ya está bastante abierta
+        const q = Math.min(Math.max((e - 0.45) / 0.55, 0), 1)
+        const qe = q * q * (3 - 2 * q)
+        icon.visible = qe > 0.001
+        icon.scale.setScalar(iconScale * qe) // crece desde 0 (efecto "sale de adentro")
+        icon.position.lerpVectors(iconStart, iconEnd, qe)
+        if (qe > 0) {
+          clock += delta
+          icon.rotation.y += ICON_SPIN * delta
+          icon.position.y += Math.sin(clock * 1.6) * ICON_BOB * qe // cabeceo suave al flotar
+        }
+      }
     },
     dispose () {
       object.traverse((o) => {
@@ -82,6 +127,20 @@ export async function createLaptop ({ THREE, scene, position, rotationY = 0 }) {
         o.skeleton?.dispose()
       })
       object.removeFromParent()
+
+      if (icon) {
+        icon.traverse((o) => {
+          o.geometry?.dispose?.()
+          const mats = Array.isArray(o.material) ? o.material : [o.material]
+          for (const m of mats) {
+            if (!m) continue
+            for (const v of Object.values(m)) v?.isTexture && v.dispose()
+            m.dispose?.()
+          }
+          o.skeleton?.dispose()
+        })
+        icon.removeFromParent()
+      }
     }
   }
 }

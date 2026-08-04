@@ -4,6 +4,8 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 const TARGET_WIDTH = 0.14
 const SPEED = 2.2
 const T_OPEN = 2.0
+const LYING_X = -Math.PI / 2
+const LIFT = 0.15
 
 export async function createAirpods ({ THREE, scene, position }) {
   const draco = new DRACOLoader()
@@ -22,6 +24,14 @@ export async function createAirpods ({ THREE, scene, position }) {
   const min = box.min.clone().multiplyScalar(scale)
   object.position.set(position.x, position.y - min.y, position.z)
   scene.add(object)
+
+  // acostado boca arriba (tapa hacia arriba) sobre la mesa; recalcular el
+  // bbox después de rotar para volver a apoyar la base sobre `position`
+  object.rotation.x = LYING_X
+  object.updateMatrixWorld(true)
+  const box2 = new THREE.Box3().setFromObject(object)
+  object.position.y += position.y - box2.min.y
+  const baseY = object.position.y
 
   const mixer = new THREE.AnimationMixer(object)
   const action = mixer.clipAction(gltf.animations[0])
@@ -66,6 +76,10 @@ export async function createAirpods ({ THREE, scene, position }) {
         animating = false
         open = true
       }
+      const p = Math.min(Math.max(action.time / T_OPEN, 0), 1)
+      const e = p * p * (3 - 2 * p) // smoothstep
+      object.position.y = baseY + LIFT * e
+      object.rotation.x = LYING_X * (1 - e) // acostado (p=0) → derecho (p=1)
     },
     dispose () {
       mixer.stopAllAction()

@@ -29,26 +29,28 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   >
     <div
       v-if="poi"
-      class="absolute top-4 right-4 z-10 w-[21rem] max-w-[calc(100vw-2rem)] origin-top-right
-             overflow-hidden rounded-xl bg-dusk-950/70 shadow-2xl shadow-black/50
-             ring-1 ring-white/10 backdrop-blur-xl"
+      class="font-display absolute top-4 right-4 z-10 w-[21rem] max-w-[calc(100vw-2rem)]
+             origin-top-right overflow-hidden rounded-xl bg-dusk-950/70 shadow-2xl
+             shadow-black/50 ring-1 ring-white/10 backdrop-blur-xl"
     >
-      <!-- Filete de acento: la lámpara del loft, reducida a una línea. -->
-      <div class="h-px bg-gradient-to-r from-amber-300/80 via-amber-300/20 to-transparent" />
-      <!-- Luz cálida cayendo desde arriba, como el reflejo del atardecer sobre el vidrio. -->
-      <div class="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-amber-200/[0.07] to-transparent" />
+      <!-- Filete de acento: el violeta del cielo, reducido a una línea. -->
+      <div class="h-px bg-gradient-to-r from-twilight-300/90 via-twilight-300/25 to-transparent" />
+      <!-- Reflejo del atardecer cayendo sobre el vidrio desde el borde superior. -->
+      <div class="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-twilight-400/[0.10] to-transparent" />
 
       <div class="relative p-5">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="font-mono text-[11px] tracking-[0.2em] text-amber-300/80 tabular-nums">
+            <p class="font-mono text-[11px] tracking-[0.2em] text-twilight-300 tabular-nums">
               {{ index }} / {{ total }}
             </p>
-            <h2 class="mt-2 text-lg leading-snug font-semibold tracking-tight text-dusk-50">
+            <!-- En caja alta el tracking negativo apretaría las letras: las
+                 mayúsculas necesitan más aire entre sí, no menos. -->
+            <h2 class="mt-2 text-base leading-snug font-semibold tracking-[0.07em] text-dusk-50 uppercase">
               {{ poi.title }}
             </h2>
-            <!-- El ámbar queda reservado para el índice y el filete; si el meta
-                 también es ámbar los dos compiten y el tono se ensucia. -->
+            <!-- El acento queda reservado para el índice y el filete; si el meta
+                 también lo usa, los dos compiten y el tono se ensucia. -->
             <p v-if="poi.meta" class="mt-1.5 text-xs tracking-wide text-dusk-400">
               {{ poi.meta }}
             </p>

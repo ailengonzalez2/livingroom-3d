@@ -1,11 +1,21 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* Tipografía de las cards. `@nuxt/fonts` (viene con Nuxt UI) descarga y
+   auto-hospeda la familia en el build: no hay pedido a Google en runtime. */
+@theme static {
+  --font-display: 'Red Hat Display', ui-sans-serif, system-ui, sans-serif;
+}
+
 /* Escala `dusk`: los grises de la UI comparten el violeta del cielo del
    atardecer en vez del gris azulado de Tailwind. El tono sale de `#565179`
    (el primer stop del degradado en `utils/three/core.js`): hue 247°, sat ~20%.
    `dusk-600` cae en `#5b577a`, prácticamente sobre el color original.
-   El acento es `amber`, que ya coincide con la luz de la lámpara (`#ffd9a0`). */
+
+   `twilight` es el acento: el mismo cielo pero llevado a hue 252° y saturación
+   alta. Tuvo que subir de saturación sí o sí — con el 20% del cielo original
+   habría quedado indistinguible de los neutros, que salen de ese mismo tono.
+   Los pasos claros (300/400) son los que se usan sobre el vidrio oscuro. */
 @theme static {
   --color-dusk-50: #f6f5fa;
   --color-dusk-100: #ecebf4;
@@ -18,4 +28,16 @@
   --color-dusk-800: #3c3a50;
   --color-dusk-900: #333145;
   --color-dusk-950: #1e1d2b;
+
+  --color-twilight-50: #f7f5ff;
+  --color-twilight-100: #ebe6fe;
+  --color-twilight-200: #d8cffc;
+  --color-twilight-300: #baaaf8;
+  --color-twilight-400: #9680ef;
+  --color-twilight-500: #795fe3;
+  --color-twilight-600: #5e41d2;
+  --color-twilight-700: #4d34b2;
+  --color-twilight-800: #413088;
+  --color-twilight-900: #372b69;
+  --color-twilight-950: #221943;
 }

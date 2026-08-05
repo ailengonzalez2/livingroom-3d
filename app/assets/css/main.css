@@ -1,2 +1,21 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* Escala `dusk`: los grises de la UI comparten el violeta del cielo del
+   atardecer en vez del gris azulado de Tailwind. El tono sale de `#565179`
+   (el primer stop del degradado en `utils/three/core.js`): hue 247°, sat ~20%.
+   `dusk-600` cae en `#5b577a`, prácticamente sobre el color original.
+   El acento es `amber`, que ya coincide con la luz de la lámpara (`#ffd9a0`). */
+@theme static {
+  --color-dusk-50: #f6f5fa;
+  --color-dusk-100: #ecebf4;
+  --color-dusk-200: #d7d6e6;
+  --color-dusk-300: #b7b4cf;
+  --color-dusk-400: #8d89ae;
+  --color-dusk-500: #6f6a95;
+  --color-dusk-600: #5b577a;
+  --color-dusk-700: #4a4762;
+  --color-dusk-800: #3c3a50;
+  --color-dusk-900: #333145;
+  --color-dusk-950: #1e1d2b;
+}

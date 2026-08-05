@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-dvh w-full overflow-hidden bg-neutral-950">
+  <div class="relative h-dvh w-full overflow-hidden bg-dusk-950">
     <ClientOnly>
       <ThreeScene />
     </ClientOnly>

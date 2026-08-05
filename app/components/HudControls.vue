@@ -23,7 +23,7 @@ const { toggleMute } = useAudio()
     <UPopover>
       <UButton icon="i-lucide-circle-help" variant="soft" color="neutral" square aria-label="Ayuda" />
       <template #content>
-        <div class="max-w-72 p-3 text-xs text-neutral-500 dark:text-neutral-400">
+        <div class="max-w-72 p-3 text-xs text-dusk-500 dark:text-dusk-400">
           <p>
             Arrastrá para orbitar y usá la rueda para acercarte. Todo lo que se
             ilumina al pasarle el mouse se puede clickear: los muebles abren un
@@ -32,7 +32,7 @@ const { toggleMute } = useAudio()
           </p>
           <!-- Varios modelos son CC-BY-4.0: el crédito es obligatorio donde se
                publica la obra, no solo en el repo. -->
-          <hr class="my-2 border-neutral-200 dark:border-neutral-800">
+          <hr class="my-2 border-dusk-200 dark:border-dusk-800">
           <p class="text-[11px] leading-relaxed">
             Modelos de Sketchfab por
             <a class="underline" href="https://sketchfab.com/dasy444" target="_blank" rel="noopener">dasy444</a>,

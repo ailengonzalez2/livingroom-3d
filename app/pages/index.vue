@@ -5,6 +5,7 @@
     </ClientOnly>
     <LoadingScreen />
     <InfoPanel />
+    <HoverLabel />
     <HudControls />
   </div>
 </template>

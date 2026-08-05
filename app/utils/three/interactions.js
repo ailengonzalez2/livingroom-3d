@@ -10,7 +10,7 @@ function isDescendantOf (obj, root) {
   return false
 }
 
-export function createInteractions ({ THREE, renderer, camera, scene, model, pois, onPoiClick, onMissClick }) {
+export function createInteractions ({ THREE, renderer, camera, scene, model, pois, onPoiClick, onMissClick, onHoverLabel }) {
   const raycaster = new THREE.Raycaster()
   const occluder = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
@@ -41,7 +41,8 @@ export function createInteractions ({ THREE, renderer, camera, scene, model, poi
   // Targets adicionales (no-POI) que reaccionan al click: shiba, airpods, laptop,
   // set de foto y cámara.
   const extras = []
-  function addExtraTarget (object, onClick) {
+  // `label` es opcional: si está, se muestra al pasar el puntero por encima.
+  function addExtraTarget (object, onClick, label = null) {
     const meshes = []
     object.traverse((o) => {
       if (!o.isMesh) return
@@ -54,7 +55,7 @@ export function createInteractions ({ THREE, renderer, camera, scene, model, poi
     // mueven (el perro camina, los airpods se levantan al abrirse).
     const box = new THREE.Box3().setFromObject(object)
     const centerLocal = object.worldToLocal(box.getCenter(new THREE.Vector3()))
-    extras.push({ object, onClick, meshes, centerLocal })
+    extras.push({ object, onClick, meshes, centerLocal, label })
   }
 
   const _center = new THREE.Vector3()
@@ -134,10 +135,29 @@ export function createInteractions ({ THREE, renderer, camera, scene, model, poi
     for (const m of hoveredMeshes) setHighlight(m, true)
   }
 
+  // Última etiqueta emitida, para no escribir el estado de Vue en cada
+  // pointermove cuando no hay nada que mostrar.
+  let labelShown = false
+  function emitLabel (data) {
+    if (!data && !labelShown) return
+    labelShown = !!data
+    onHoverLabel?.(data)
+  }
+
   const onMove = (e) => {
     const { mesh, extra } = pick(e)
     setHovered(mesh ?? extra?.object ?? null, mesh ? [mesh] : (extra ? extra.meshes : []))
     dom.style.cursor = (mesh || extra) ? 'pointer' : ''
+    // En touch no hay hover: la etiqueta aparecería durante el drag de órbita
+    // y quedaría colgada, porque no llega ningún pointerleave que la limpie.
+    const label = e.pointerType === 'touch' ? null : extra?.label
+    emitLabel(label ? { text: label, x: e.clientX, y: e.clientY } : null)
+  }
+
+  const onLeave = () => {
+    setHovered(null, [])
+    emitLabel(null)
+    dom.style.cursor = ''
   }
 
   // Distinguir click de drag de órbita
@@ -157,6 +177,7 @@ export function createInteractions ({ THREE, renderer, camera, scene, model, poi
   dom.addEventListener('pointermove', onMove)
   dom.addEventListener('pointerdown', onDown)
   dom.addEventListener('pointerup', onUp)
+  dom.addEventListener('pointerleave', onLeave)
 
   return {
     // fitToBox acepta cualquier Object3D; para POIs de varios meshes se usa el
@@ -168,14 +189,17 @@ export function createInteractions ({ THREE, renderer, camera, scene, model, poi
     // original que la animación guarda para restaurar en el blur (ver Task 10).
     clearHover () {
       setHovered(null, [])
+      emitLabel(null)
       dom.style.cursor = ''
     },
     addExtraTarget,
     dispose () {
       setHovered(null, [])
+      emitLabel(null)
       dom.removeEventListener('pointermove', onMove)
       dom.removeEventListener('pointerdown', onDown)
       dom.removeEventListener('pointerup', onUp)
+      dom.removeEventListener('pointerleave', onLeave)
       dom.style.cursor = ''
       extras.length = 0
     }

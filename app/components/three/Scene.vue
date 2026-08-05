@@ -25,7 +25,7 @@ const WAYPOINTS = [
 
 const CHAIR_MESHES = ['node_0005_Material007_0', 'node_0006_Material007_0', 'node_0007_Material007_0']
 
-const { activePoiId, webglError, loading } = useSceneState()
+const { activePoiId, webglError, loading, hoverLabel } = useSceneState()
 const root = ref(null)
 let ctx = null
 let model = null
@@ -87,7 +87,8 @@ onMounted(async () => {
       model,
       pois,
       onPoiClick: id => emitSceneAction('focusPoi', id),
-      onMissClick: () => { if (activePoiId.value) emitSceneAction('resetCamera') }
+      onMissClick: () => { if (activePoiId.value) emitSceneAction('resetCamera') },
+      onHoverLabel: (data) => { hoverLabel.value = data }
     })
 
     // brillo de base de la lámpara colgante
@@ -132,7 +133,7 @@ onMounted(async () => {
         dog = d
         ctx.enableShadows(dog.object)
         ctx.addTick(delta => dog.update(delta))
-        interactions.addExtraTarget(dog.object, () => dog.jump())
+        interactions.addExtraTarget(dog.object, () => dog.jump(), 'Spock')
       })
       .catch(err => console.warn('No se pudo cargar el shiba', err))
 
@@ -239,7 +240,7 @@ onMounted(async () => {
     ctx.addTick(() => { if (activePoiId.value && rig.isZoomedOut()) releaseFocus() })
 
     // Handle de verificación en dev (import.meta.dev: no llega al build de prod).
-    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog, getAirpods: () => airpods, getCup: () => cup, getTableSet: () => tableSet, getLaptop: () => laptop, getAirpodsMusic: () => airpodsMusic } }
+    if (import.meta.dev) { window.__loft = { ctx, model, rig, interactions, getDog: () => dog, getAirpods: () => airpods, getCup: () => cup, getTableSet: () => tableSet, getLaptop: () => laptop, getAirpodsMusic: () => airpodsMusic, getHoverLabel: () => hoverLabel.value } }
   } catch (err) {
     if (disposed) return
     console.error('Error cargando el modelo', err)

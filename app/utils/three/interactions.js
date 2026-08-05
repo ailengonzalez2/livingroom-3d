@@ -1,3 +1,9 @@
+// Radio de tolerancia (en px de pantalla) para rescatar clicks que pasaron
+// cerca de un target extra sin acertarle. Los objetos de la mesa son diminutos
+// a distancia de cámara normal —los airpods miden 6×3 px en la vista por
+// defecto— así que sin esto son prácticamente inclickeables.
+const SNAP_PX = 14
+
 function isDescendantOf (obj, root) {
   let o = obj
   while (o) { if (o === root) return true; o = o.parent }
@@ -6,6 +12,7 @@ function isDescendantOf (obj, root) {
 
 export function createInteractions ({ THREE, renderer, camera, scene, model, pois, onPoiClick, onMissClick }) {
   const raycaster = new THREE.Raycaster()
+  const occluder = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
   const dom = renderer.domElement
 
@@ -26,27 +33,81 @@ export function createInteractions ({ THREE, renderer, camera, scene, model, poi
     poiMeshes.set(poi.id, meshes)
   }
 
-  let hovered = null
+  // Estado de hover: la clave identifica qué está resaltado (un mesh de POI o
+  // el objeto raíz de un extra) y `hoveredMeshes` son los meshes a restaurar.
+  let hoveredKey = null
+  let hoveredMeshes = []
 
-  // Targets adicionales (no-POI) que reaccionan al click, ej. el shiba.
+  // Targets adicionales (no-POI) que reaccionan al click: shiba, airpods, laptop,
+  // set de foto y cámara.
   const extras = []
   function addExtraTarget (object, onClick) {
-    extras.push({ object, onClick })
+    const meshes = []
+    object.traverse((o) => {
+      if (!o.isMesh) return
+      o.material = Array.isArray(o.material) ? o.material.map(m => m.clone()) : o.material.clone()
+      meshes.push(o)
+    })
+    // Centro en espacio local, calculado una sola vez: transformarlo por la
+    // matriz del objeto en cada pick es mucho más barato que rehacer un Box3
+    // por movimiento del puntero, y sigue siendo correcto para objetos que se
+    // mueven (el perro camina, los airpods se levantan al abrirse).
+    const box = new THREE.Box3().setFromObject(object)
+    const centerLocal = object.worldToLocal(box.getCenter(new THREE.Vector3()))
+    extras.push({ object, onClick, meshes, centerLocal })
+  }
+
+  const _center = new THREE.Vector3()
+  const _dir = new THREE.Vector3()
+
+  function centerOf (entry) {
+    return _center.copy(entry.centerLocal).applyMatrix4(entry.object.matrixWorld)
+  }
+
+  // ¿El objeto está realmente a la vista, o hay algo tapándolo? Sin este
+  // control el snap podría enganchar un objeto detrás de una pared.
+  function isVisible (entry, center) {
+    _dir.copy(center).sub(camera.position).normalize()
+    occluder.set(camera.position, _dir)
+    const h = occluder.intersectObjects(scene.children, true)[0]
+    return h ? isDescendantOf(h.object, entry.object) : false
+  }
+
+  // Extra más cercano al puntero en espacio de pantalla, dentro de SNAP_PX.
+  function snapToExtra (px, py, rect) {
+    let best = null
+    let bestDist = SNAP_PX
+    for (const entry of extras) {
+      const p = centerOf(entry).clone().project(camera)
+      if (p.z > 1) continue // detrás de la cámara
+      const sx = (p.x + 1) / 2 * rect.width
+      const sy = (-p.y + 1) / 2 * rect.height
+      const d = Math.hypot(sx - px, sy - py)
+      if (d < bestDist) { bestDist = d; best = entry }
+    }
+    // La verificación de oclusión se hace solo sobre el candidato ganador.
+    return best && isVisible(best, centerOf(best)) ? best : null
   }
 
   function pick (e) {
     const r = dom.getBoundingClientRect()
-    pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)
+    const px = e.clientX - r.left
+    const py = e.clientY - r.top
+    pointer.set((px / r.width) * 2 - 1, -(py / r.height) * 2 + 1)
     raycaster.setFromCamera(pointer, camera)
 
     // Se raycastea la escena entera para respetar la oclusión: solo cuenta lo
     // que el usuario ve primero. Si delante del POI hay un mueble no
     // interactivo (la mesa, una pared), el click no lo atraviesa.
     const hit = raycaster.intersectObjects(scene.children, true)[0]
-    if (!hit) return { mesh: null, extra: null }
-    if (meshToPoi.has(hit.object)) return { mesh: hit.object, extra: null }
-    const extra = extras.find(en => isDescendantOf(hit.object, en.object))
-    return { mesh: null, extra: extra ?? null }
+    if (hit) {
+      if (meshToPoi.has(hit.object)) return { mesh: hit.object, extra: null }
+      const extra = extras.find(en => isDescendantOf(hit.object, en.object))
+      if (extra) return { mesh: null, extra }
+    }
+    // Nada acertado: rescate por cercanía, solo para extras. Los POIs son
+    // muebles grandes y no necesitan ayuda; darles snap les haría robar clicks.
+    return { mesh: null, extra: snapToExtra(px, py, r) }
   }
 
   function setHighlight (mesh, on) {
@@ -65,13 +126,17 @@ export function createInteractions ({ THREE, renderer, camera, scene, model, poi
     }
   }
 
+  function setHovered (key, meshes) {
+    if (key === hoveredKey) return
+    for (const m of hoveredMeshes) setHighlight(m, false)
+    hoveredKey = key
+    hoveredMeshes = meshes
+    for (const m of hoveredMeshes) setHighlight(m, true)
+  }
+
   const onMove = (e) => {
     const { mesh, extra } = pick(e)
-    if (mesh !== hovered) {
-      if (hovered) setHighlight(hovered, false)
-      hovered = mesh
-      if (hovered) setHighlight(hovered, true)
-    }
+    setHovered(mesh ?? extra?.object ?? null, mesh ? [mesh] : (extra ? extra.meshes : []))
     dom.style.cursor = (mesh || extra) ? 'pointer' : ''
   }
 
@@ -102,13 +167,12 @@ export function createInteractions ({ THREE, renderer, camera, scene, model, poi
     // "hovered" y su emissive de highlight no debe confundirse con el estado
     // original que la animación guarda para restaurar en el blur (ver Task 10).
     clearHover () {
-      if (hovered) setHighlight(hovered, false)
-      hovered = null
+      setHovered(null, [])
       dom.style.cursor = ''
     },
     addExtraTarget,
     dispose () {
-      if (hovered) setHighlight(hovered, false)
+      setHovered(null, [])
       dom.removeEventListener('pointermove', onMove)
       dom.removeEventListener('pointerdown', onDown)
       dom.removeEventListener('pointerup', onUp)

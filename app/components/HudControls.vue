@@ -24,9 +24,10 @@ const { toggleMute } = useAudio()
       <UButton icon="i-lucide-circle-help" variant="soft" color="neutral" square aria-label="Ayuda" />
       <template #content>
         <div class="max-w-60 p-3 text-xs text-neutral-500 dark:text-neutral-400">
-          Arrastrá para orbitar, usá la rueda para acercarte y hacé click en los
-          objetos iluminados para conocerlos. Para salir de un objeto, alejate
-          con la rueda.
+          Arrastrá para orbitar y usá la rueda para acercarte. Todo lo que se
+          ilumina al pasarle el mouse se puede clickear: los muebles abren un
+          panel, y las cosas sobre la mesa —y el perro— hacen otras cosas.
+          Para salir de un objeto, alejate con la rueda.
         </div>
       </template>
     </UPopover>

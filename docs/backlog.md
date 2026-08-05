@@ -27,8 +27,12 @@ Priorizado por dependencia y multiplicador: cada tier hace que el siguiente valg
 
 ### Tier 1 — que exista para alguien más
 
-- [ ] **#3 — OG image + meta tags.** Sin esto el link pegado en LinkedIn sale como un rectángulo
-  gris. Un screenshot del loft al atardecer hace la mitad del trabajo. ~45 min.
+- [x] **#3 — OG image + meta tags** (2026-08-05). `public/og.jpg`, 1200×630 (la proporción 1.91:1
+  que esperan LinkedIn/X/Facebook), 192 KB, recortada de una captura del loft: se le sacaron 80 px
+  del pie para eliminar los botones del HUD. Los meta van en `nuxt.config.js` con `SITE_URL` en una
+  constante, porque `og:image` **debe** ser absoluta o los crawlers la ignoran — mudarse a un
+  dominio propio es una sola edición. Incluye `og:image:width/height` (sin eso algunos crawlers
+  muestran la tarjeta chica), `twitter:card: summary_large_image`, canonical y `lang="es"`.
 
 ### Tier 3 — que funcione donde lo van a abrir
 

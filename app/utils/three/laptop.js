@@ -133,7 +133,10 @@ export async function createLaptop ({ THREE, scene, camera, position, rotationY 
       icons.forEach((it, i) => {
         // el ícono recién emerge cuando la tapa ya está bastante abierta,
         // con un retardo propio para lograr un efecto de cascada
-        const q = Math.min(Math.max((e - 0.45 - it.delay) / 0.55, 0), 1)
+        // el retardo acorta el tramo de animación del ícono; hay que re-normalizarlo
+        // o los íconos escalonados nunca completan su escala/posición final
+        const span = 0.55 - it.delay
+        const q = span > 0 ? Math.min(Math.max((e - 0.45 - it.delay) / span, 0), 1) : 1
         const qe = q * q * (3 - 2 * q)
         it.obj.visible = qe > 0.001
         it.obj.scale.setScalar(it.scale * qe) // crece desde 0 (efecto "sale de adentro")

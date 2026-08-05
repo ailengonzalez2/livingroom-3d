@@ -10,9 +10,18 @@ Priorizado por dependencia y multiplicador: cada tier hace que el siguiente valg
   --simplify-error 0.01` (el `--simplify-error` por defecto, 0.0001, es tan conservador que no
   simplifica nada). Resultado: **3.5 → 1.5 MB**. Con ratio 0.12 baja a 756 KB si se quiere más,
   a costa de calidad sin verificar visualmente.
-- [ ] **#2 — Deploy + repo público** con descripción y homepage.
-- [ ] **#4 — Discoverability de los objetos interactivos.**
-- [ ] **#5 — Reescribir los POIs para que hablen de Ailen**, no de los muebles.
+- [x] **#2 — Deploy + repo público.** El deploy ya existía en Railway
+  (`livingroom-3d-production.up.railway.app`, responde 200 en 0.73 s). Se hizo público el repo
+  con descripción y homepage, y se agregó README. **Hallazgo:** cinco modelos son CC-BY-4.0 y
+  exigen crédito visible donde se publica la obra — se agregaron los créditos al README y al
+  popover de ayuda del sitio.
+- [x] **#4 — Discoverability.** Highlight de hover extendido a los objetos extra (antes solo los
+  POIs se iluminaban) y rescate por cercanía en espacio de pantalla: si el rayo no acierta, gana
+  el extra más cercano dentro de 14 px, verificando que no esté ocluido. Medido en el navegador:
+  los tres objetos de la mesa están a 18–29 px entre sí y el desempate por cercanía los resuelve.
+- [x] **#5 — POIs reescritos** como capítulos sobre Ailen, con campo `meta` nuevo (dato duro) y
+  cuerpo en primera persona. Se descartó la presentación al entrar por decisión del usuario, así
+  que el nombre aparece dentro del POI del busto.
 
 ## Pendiente
 

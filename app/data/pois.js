@@ -12,7 +12,7 @@ export const pois = [
     ],
     title: 'Cómo trabajo',
     meta: 'Remoto · Scrum y Kanban · Inglés C1',
-    description: 'Más de 20 productos entregados para startups y agencias, siempre con equipos repartidos en varios husos horarios: developers, diseñadores y stakeholders. Cinco años de remoto me enseñaron que la mitad del trabajo es dejar por escrito lo que se decidió.'
+    description: 'Más de 20 productos entregados para startups y agencias, siempre con equipos repartidos en varios husos horarios: developers, diseñadores y stakeholders. Mi trabajo es end-to-end: desde la investigación y la planificación, pasando por el diseño, hasta el deploy en producción de aplicaciones 100% funcionales.'
   },
   // La mesa ratona no es un POI: sostiene los objetos interactivos (laptop,
   // airpods, foto y cámara) y clickearla competía con ellos.
@@ -48,7 +48,7 @@ export const pois = [
     meshNames: ['node_0004_Material006_0'],
     title: 'Dónde estoy',
     meta: 'Córdoba, Argentina',
-    description: 'Vivo en Córdoba y trabajo remoto para equipos de donde sea. Si algo de lo que viste te sirve, los discos que flotan por el loft llevan a mi LinkedIn, mi X y mi Telegram. También podés escribirme a ailengonzalez21.ag@gmail.com.'
+    description: 'Vivo en Córdoba y hace cinco años trabajo remoto desde casa. Disfruto de trabajar en mi ambiente, de compartir tardes de trabajo con colegas y de pasar el día acompañada de mi perro, Spock.'
   }
 ]
 

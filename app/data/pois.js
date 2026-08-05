@@ -32,8 +32,8 @@ export const pois = [
     id: 'cuadro',
     meshNames: ['Cube003_Material009_0'],
     title: 'El lado de diseño',
-    meta: 'Figma · Design systems · User research',
-    description: 'Antes de que exista una línea de código hago research, arquitectura de información y prototipos. Diseñar y programar la misma pieza me deja cerrar el ciclo sin traducciones de por medio, y sin lo que siempre se pierde en esa traducción.',
+    meta: 'Figma · Design systems · IA en el proceso',
+    description: 'Antes de que exista una línea de código hago research, arquitectura de información y prototipos. La IA vive en todo ese recorrido: sintetizo entrevistas y documentación, exploro variantes visuales en minutos, escribo features con agentes y automatizo lo repetitivo en vez de hacerlo a mano. Diseñar y programar la misma pieza me deja cerrar el ciclo sin traducciones de por medio, y sin lo que siempre se pierde en esa traducción.',
     animation: 'tv'
   },
   {

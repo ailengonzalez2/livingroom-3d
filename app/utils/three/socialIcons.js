@@ -1,8 +1,23 @@
 // Íconos de marca generados proceduralmente para enlazar a los perfiles
 // del usuario. Discos estilo "moneda" para combinar con el modelo de Telegram.
+//
+// `lighting` describe cómo se comporta el material de las tapas bajo la luz
+// cálida de la escena:
+// - linkedin: emissive del color de marca a baja intensidad (look de hoy).
+// - x: el propio glifo emite luz vía emissiveMap (el fondo negro del mapa no
+//   emite), así el contraste blanco-sobre-negro se mantiene con cualquier
+//   iluminación sin lavar el disco entero como pasaría con un emissive plano.
 const BRAND = {
-  linkedin: { bg: '#0A66C2', draw: drawLinkedIn },
-  x: { bg: '#000000', draw: drawX }
+  linkedin: {
+    bg: '#0A66C2',
+    draw: drawLinkedIn,
+    lighting: { emissive: '#0A66C2', emissiveIntensity: 0.25, roughness: 0.35, emissiveMap: false }
+  },
+  x: {
+    bg: '#050505',
+    draw: drawX,
+    lighting: { emissive: '#ffffff', emissiveIntensity: 0.55, roughness: 0.85, emissiveMap: true }
+  }
 }
 
 function drawLinkedIn (g, s) {
@@ -15,17 +30,20 @@ function drawLinkedIn (g, s) {
   g.fillText('in', s * 0.5, s * 0.55)
 }
 
+// Glifo oficial de X (path del set de marca, viewBox 24×24): trazos de grosor
+// variable y extremos cortados, no una equis simétrica.
+const X_PATH = 'M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z'
+
 function drawX (g, s) {
   g.fillStyle = '#000000'
   g.fillRect(0, 0, s, s)
-  g.strokeStyle = '#ffffff'
-  g.lineWidth = s * 0.115
-  g.lineCap = 'butt'
-  const a = s * 0.29, b = s * 0.71
-  g.beginPath()
-  g.moveTo(a, a); g.lineTo(b, b)
-  g.moveTo(b, a); g.lineTo(a, b)
-  g.stroke()
+  g.fillStyle = '#ffffff'
+  const k = s * 0.46 / 24
+  g.save()
+  g.translate(s / 2 - 12 * k, s / 2 - 12 * k)
+  g.scale(k, k)
+  g.fill(new Path2D(X_PATH), 'evenodd')   // evenodd: deja el hueco interno del glifo
+  g.restore()
 }
 
 export function createSocialIcon ({ THREE, kind }) {
@@ -46,11 +64,13 @@ export function createSocialIcon ({ THREE, kind }) {
   const geometry = new THREE.CylinderGeometry(0.5, 0.5, 0.16, 64)
   // orden de grupos de CylinderGeometry: [lateral, tapa superior, tapa inferior]
   const sideMat = new THREE.MeshStandardMaterial({ color: brand.bg, roughness: 0.45 })
+  const { lighting } = brand
   const capMat = new THREE.MeshStandardMaterial({
     map: tex,
-    roughness: 0.35,
-    emissive: new THREE.Color(brand.bg),
-    emissiveIntensity: 0.25
+    roughness: lighting.roughness,
+    emissive: new THREE.Color(lighting.emissive),
+    emissiveIntensity: lighting.emissiveIntensity,
+    ...(lighting.emissiveMap ? { emissiveMap: tex } : {})
   })
   const materials = [sideMat, capMat, capMat]
 
@@ -71,6 +91,7 @@ export function disposeSocialIcon (group) {
     for (const m of mats) {
       if (!m) continue
       if (m.map) m.map.dispose()
+      if (m.emissiveMap && m.emissiveMap !== m.map) m.emissiveMap.dispose()
       m.dispose?.()
     }
   })

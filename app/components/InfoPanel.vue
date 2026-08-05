@@ -31,7 +31,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       v-if="poi"
       class="font-display absolute top-4 right-4 z-10 w-[21rem] max-w-[calc(100vw-2rem)]
              origin-top-right overflow-hidden rounded-xl bg-dusk-950/70 shadow-2xl
-             shadow-black/50 ring-1 ring-white/10 backdrop-blur-xl"
+             shadow-black/50 ring-1 ring-white/10 backdrop-blur-xl
+             sm:top-6 sm:right-6 sm:max-w-[calc(100vw-3rem)]"
     >
       <!-- Filete de acento: el violeta del cielo, reducido a una línea. -->
       <div class="h-px bg-gradient-to-r from-twilight-300/90 via-twilight-300/25 to-transparent" />

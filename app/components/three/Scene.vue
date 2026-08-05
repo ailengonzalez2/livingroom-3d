@@ -11,6 +11,7 @@ import { placeDecor } from '~/utils/three/decor'
 import { createTableSet } from '~/utils/three/tableSet'
 import { createLaptop } from '~/utils/three/laptop'
 import { pois } from '~/data/pois'
+import { socialLinks } from '~/data/social'
 import { onSceneAction, emitSceneAction } from '~/utils/sceneBus'
 
 const WAYPOINTS = [
@@ -183,6 +184,12 @@ onMounted(async () => {
         ctx.enableShadows(laptop.object)
         ctx.addTick(d => laptop.update(d))
         interactions.addExtraTarget(laptop.object, () => laptop.toggle())
+
+        for (const t of laptop.iconTargets) {
+          const url = socialLinks[t.kind]
+          if (!url) continue
+          interactions.addExtraTarget(t.object, () => window.open(url, '_blank', 'noopener,noreferrer'))
+        }
       })
       .catch(err => console.warn('No se pudo cargar la laptop', err))
 

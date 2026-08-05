@@ -58,9 +58,9 @@ export async function createLaptop ({ THREE, scene, camera, position, rotationY 
   // [objeto, offset lateral, retardo de aparición, corrección de yaw]
   const iconConfigs = [
     // el disco del GLB de telegram tiene su cara en el eje X local, no en Z
-    { obj: telegram, side: -1, delay: 0.00, yawOffset: -Math.PI / 2 },
-    { obj: linkedin, side: 0, delay: 0.06, yawOffset: 0 },
-    { obj: xIcon, side: 1, delay: 0.12, yawOffset: 0 }
+    { kind: 'telegram', obj: telegram, side: -1, delay: 0.00, yawOffset: -Math.PI / 2 },
+    { kind: 'linkedin', obj: linkedin, side: 0, delay: 0.06, yawOffset: 0 },
+    { kind: 'x', obj: xIcon, side: 1, delay: 0.12, yawOffset: 0 }
   ]
 
   const icons = []
@@ -89,7 +89,7 @@ export async function createLaptop ({ THREE, scene, camera, position, rotationY 
       .add(new THREE.Vector3(0, ICON_RISE, 0))
     obj.position.copy(start)
 
-    icons.push({ obj, scale: iconScale, start, end, delay: cfg.delay, yawOffset: cfg.yawOffset })
+    icons.push({ kind: cfg.kind, obj, scale: iconScale, start, end, delay: cfg.delay, yawOffset: cfg.yawOffset })
   }
 
   const screens = []
@@ -116,6 +116,8 @@ export async function createLaptop ({ THREE, scene, camera, position, rotationY 
 
   return {
     object,
+    // [{ kind, object }] para que Scene.vue registre los que tengan link.
+    iconTargets: icons.map(it => ({ kind: it.kind, object: it.obj })),
     toggle () {
       target = target === 1 ? 0 : 1
     },

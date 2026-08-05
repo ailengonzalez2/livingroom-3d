@@ -21,8 +21,12 @@ export function createCameraRig ({ THREE, camera, domElement, model, bounds = nu
   controls.minPolarAngle = Math.PI / 6
   controls.setBoundary(box)                        // el target no sale del loft
 
+  // Encuadre inicial (y el de "Vista general"). Bajar HOME_DISTANCE acerca la
+  // cámara y deja menos fondo vacío alrededor del loft; subirlo lo aleja.
+  const HOME_DISTANCE = 1.25
+
   const home = {
-    pos: [center.x + radius * 1.35, center.y + size.y * 0.25, center.z + radius * 1.35],
+    pos: [center.x + radius * HOME_DISTANCE, center.y + size.y * 0.25, center.z + radius * HOME_DISTANCE],
     target: [center.x - radius * 0.15, center.y - size.y * 0.3, center.z]
   }
   controls.setLookAt(...home.pos, ...home.target, false)

@@ -24,9 +24,20 @@ export function createCameraRig ({ THREE, camera, domElement, model, bounds = nu
   // Encuadre inicial (y el de "Vista general"). Bajar HOME_DISTANCE acerca la
   // cámara y deja menos fondo vacío alrededor del loft; subirlo lo aleja.
   const HOME_DISTANCE = 1.25
+  // Ángulo de órbita en el plano horizontal. 45° es la diagonal pura entre los
+  // dos ejes; moverlo gira la vista hacia una cara más frontal del loft.
+  const HOME_AZIMUTH = Math.PI / 6
+
+  // El √2 conserva la distancia que daba la diagonal original, para que cambiar
+  // solo el ángulo no cambie además cuánto se acerca la cámara.
+  const homeDist = radius * HOME_DISTANCE * Math.SQRT2
 
   const home = {
-    pos: [center.x + radius * HOME_DISTANCE, center.y + size.y * 0.25, center.z + radius * HOME_DISTANCE],
+    pos: [
+      center.x + homeDist * Math.sin(HOME_AZIMUTH),
+      center.y + size.y * 0.25,
+      center.z + homeDist * Math.cos(HOME_AZIMUTH)
+    ],
     target: [center.x - radius * 0.15, center.y - size.y * 0.3, center.z]
   }
   controls.setLookAt(...home.pos, ...home.target, false)
